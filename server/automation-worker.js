@@ -1,7 +1,7 @@
 /**
- * Reebow TECH Automation Worker
- * Runs as a background clock daemon simulating automated hourly checks.
- * Depletes active client balances and trips the kill-switch automatically when hours hit 0.
+ * Reebow TECH Background Management Daemon
+ * Automatically checks active client hours, updates subscription balances, 
+ * and pauses assistant widgets when hours reach zero.
  */
 
 const fs = require('fs');
@@ -9,11 +9,17 @@ const path = require('path');
 
 const dbPath = path.join(__dirname, 'database.json');
 
-function runAutomationDaemon() {
-    console.log("🤖 Reebow Automation Worker Clock Initialized...");
+function runBackgroundManager() {
+    console.log("🤖 Reebow Background Management Service Initialized...");
     
+    // Runs an hourly check loop (simulated every 60 seconds for verification)
     setInterval(() => {
         try {
+            if (!fs.existsSync(dbPath)) {
+                console.warn("Client database file not found.");
+                return;
+            }
+
             const rawData = fs.readFileSync(dbPath, 'utf8');
             const db = JSON.parse(rawData);
 
@@ -21,24 +27,25 @@ function runAutomationDaemon() {
             db.clients.forEach(client => {
                 if (client.status === 'ACTIVE' && client.remainingHours > 0) {
                     client.remainingHours -= 1;
-                    console.log(`[CLOCK TICK] Client ${client.businessName} hours decremented. Remaining: ${client.remainingHours}`);
+                    console.log(`[SERVICE UPDATE] Client [${client.businessName}] hours updated. Remaining: ${client.remainingHours}`);
                     updated = true;
 
                     if (client.remainingHours <= 0) {
-                        client.status = 'SUSPENDED';
-                        client.gpuStreamEndpoint = null;
-                        console.log(`[KILL-SWITCH TRIGGERED] Client ${client.businessName} balance depleted. GPU container terminated.`);
+                        client.status = 'PAUSED';
+                        client.streamEndpoint = null;
+                        console.log(`[SERVICE PAUSED] Client [${client.businessName}] balance reached 0. Assistant widget paused pending renewal.`);
                     }
                 }
             });
 
             if (updated) {
                 fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+                console.log("[DATABASE SYNC] Client records successfully synchronized.");
             }
         } catch (err) {
-            console.error("Error executing automation worker loop:", err);
+            console.error("Error executing background service loop:", err);
         }
-    }, 60000); // Runs every 60 seconds for simulation testing
+    }, 60000);
 }
 
-runAutomationDaemon();
+runBackgroundManager();
