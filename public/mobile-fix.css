@@ -1,0 +1,665 @@
+/* ════════════════════════════════════════════════════════════════════════
+   REEBOW TECH — MOBILE FIXES & PLATFORM ADAPTATIONS
+   Version: 2.0.0 | iOS Safe Areas | Android Keyboard | PWA | Touch Targets
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ────────────────────────────────────────────────────────────────────────
+   1. VIEWPORT & SAFE AREAS (iOS Notch, Home Indicator, Android Bars)
+   ──────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Safe area insets (set by browser, fallback to 0) */
+  --safe-top: env(safe-area-inset-top, 0);
+  --safe-right: env(safe-area-inset-right, 0);
+  --safe-bottom: env(safe-area-inset-bottom, 0);
+  --safe-left: env(safe-area-inset-left, 0);
+
+  /* Dynamic viewport units (iOS 15.4+, Android 108+) */
+  --vh: 1vh; /* Fallback, updated by JS */
+  --svh: 1svh; /* Small viewport (keyboard open) */
+  --lvh: 1lvh; /* Large viewport (keyboard closed) */
+  --dvh: 1dvh; /* Dynamic viewport (current) */
+}
+
+/* Apply safe areas to full-screen containers */
+.visitor-layout,
+.admin-layout,
+.call-overlay,
+.login-screen,
+.modal,
+.sidebar,
+.right-panel {
+  padding-top: max(var(--space-0), var(--safe-top));
+  padding-right: max(var(--space-0), var(--safe-right));
+  padding-bottom: max(var(--space-0), var(--safe-bottom));
+  padding-left: max(var(--space-0), var(--safe-left));
+}
+
+/* Specific safe area padding for fixed elements */
+.nav,
+.visitor-tabs,
+.chat-footer,
+.visitor-input-area,
+.admin-header,
+.sidebar-header,
+.call-header,
+.call-controls,
+.offline-banner,
+.connection-status,
+.pwa-banner,
+.toast-container,
+.incoming-call-banner {
+  padding-left: max(var(--space-4), var(--safe-left));
+  padding-right: max(var(--space-4), var(--safe-right));
+}
+
+/* Bottom bars need extra bottom padding */
+.visitor-tabs,
+.visitor-input-area,
+.chat-footer,
+.call-controls,
+.incoming-call-banner {
+  padding-bottom: max(var(--space-4), var(--safe-bottom));
+}
+
+/* Top bars need extra top padding */
+.nav,
+.admin-header,
+.connection-status {
+  padding-top: max(var(--space-3), var(--safe-top));
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   2. DYNAMIC VIEWPORT HEIGHT (JS Updates --vh on resize/orientation)
+   ──────────────────────────────────────────────────────────────────────── */
+.visitor-layout,
+.admin-layout,
+.call-overlay,
+.login-screen,
+.hero,
+.device-frame,
+.demo-preview {
+  /* Use CSS custom property updated by JS */
+  min-height: calc(var(--vh, 1vh) * 100);
+  min-height: calc(var(--dvh, 1vh) * 100);
+}
+
+/* Fallback for browsers without dvh */
+@supports not (height: 100dvh) {
+  .visitor-layout,
+  .admin-layout,
+  .call-overlay,
+  .hero {
+    min-height: 100vh;
+    min-height: -webkit-fill-available; /* iOS Safari */
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   3. TOUCH TARGETS (44×44px minimum per WCAG/HIG)
+   ──────────────────────────────────────────────────────────────────────── */
+button,
+.btn,
+[role="button"],
+a,
+input[type="checkbox"],
+input[type="radio"],
+.switch,
+.tab,
+.panel-tab,
+.dropdown-item,
+.nav-link,
+.nav-toggle,
+.btn-icon,
+.attach-btn,
+.send-btn,
+.call-control-btn,
+.call-header-btn,
+.incoming-call-btn,
+.pwa-install,
+.pwa-dismiss,
+.modal-close,
+.quick-reply-item {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation; /* Prevents double-tap zoom */
+}
+
+/* Exception: compact inline elements */
+.badge,
+.avatar,
+.status-dot,
+.typing-dots span,
+.pulse-dot {
+  min-height: unset;
+  min-width: unset;
+}
+
+/* Ensure clickable area on small icons */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   4. iOS RUBBER BANDING / OVERSCROLL PREVENTION
+   ──────────────────────────────────────────────────────────────────────── */
+html {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+body {
+  overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
+  overflow: hidden; /* Let inner containers scroll */
+}
+
+/* Allow scroll only where needed */
+.messages-container,
+.visitor-list,
+.calls-panel,
+.settings-panel,
+.panel-content,
+.modal-body,
+.dropdown-menu,
+.toast-container,
+.sidebar,
+.right-panel,
+.chat-panel,
+.tab-panel.active {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain; /* Prevent parent scroll */
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   5. ANDROID KEYBOARD / VIRTUAL KEYBOARD HANDLING
+   ──────────────────────────────────────────────────────────────────────── */
+@supports (height: 100dvh) {
+  .visitor-layout {
+    height: 100dvh;
+  }
+}
+
+/* Visual viewport API fallback (handled in JS) */
+.visitor-input-area,
+.chat-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-sticky);
+}
+
+/* Prevent input zoom on focus (iOS requires 16px+ font-size) */
+input,
+textarea,
+select {
+  font-size: 16px !important; /* Minimum to prevent zoom on iOS */
+}
+
+/* But allow smaller in specific contexts */
+.login-screen input,
+.modal-body input,
+.settings-pane select {
+  font-size: var(--text-base) !important; /* 15px OK in modals */
+}
+
+/* Extra padding when keyboard opens (handled via JS visualViewport) */
+.keyboard-open .visitor-input-area,
+.keyboard-open .chat-footer {
+  padding-bottom: calc(var(--space-4) + var(--safe-bottom) + env(keyboard-inset-height, 0));
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   6. PWA STANDALONE MODE (iOS Web App, Android TWA)
+   ──────────────────────────────────────────────────────────────────────── */
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  :root {
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Hide browser chrome specific elements */
+  .nav,
+  .hero-scroll,
+  .deploy-manual summary {
+    display: none !important;
+  }
+
+  /* Full-screen layouts */
+  .visitor-layout,
+  .admin-layout {
+    height: 100dvh;
+    height: 100vh; /* Fallback */
+  }
+
+  /* Status bar styling */
+  .nav {
+    padding-top: max(var(--safe-top), var(--space-3));
+  }
+
+  /* iOS status bar text color */
+  meta[name="apple-mobile-web-app-status-bar-style"] {
+    content: "black-translucent";
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   7. TEXT SELECTION & USER SELECT (Prevent accidental selection on UI)
+   ──────────────────────────────────────────────────────────────────────── */
+button,
+.btn,
+[role="button"],
+.nav-link,
+.tab,
+.panel-tab,
+.dropdown-item,
+.avatar,
+.badge,
+.status-dot,
+.call-control,
+.typing-dots,
+.spinner,
+.pulse-dot,
+.hamburger,
+.nav-toggle {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* Disable iOS callout on long press */
+}
+
+/* Allow selection on content */
+.message-bubble,
+.message-time,
+.welcome-message,
+.system-message,
+.chat-input,
+input[type="text"],
+textarea,
+.help-text,
+.details-grid dd,
+.documentation-content {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   8. INPUT & FORM FIXES (iOS/Safari Specific)
+   ──────────────────────────────────────────────────────────────────────── */
+/* Remove native styling */
+input,
+textarea,
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-border-radius: 0;
+  border-radius: var(--radius-lg);
+}
+
+/* Remove search cancel button (iOS) */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cline x1='18' y1='6' x2='6' y2='18'/%3E%3Cline x1='6' y1='6' x2='18' y2='18'/%3E%3C/svg%3E") center/contain no-repeat;
+  cursor: pointer;
+}
+input[type="search"]::-webkit-search-cancel-button:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2'%3E%3Cline x1='18' y1='6' x2='6' y2='18'/%3E%3Cline x1='6' y1='6' x2='18' y2='18'/%3E%3C/svg%3E");
+}
+
+/* Remove autocomplete styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-input) inset !important;
+  box-shadow: 0 0 0 1000px var(--bg-input) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  caret-color: var(--accent-primary);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Fix select arrow on iOS */
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  padding-right: var(--space-10);
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   9. SCROLLBAR HIDING (Mobile - native momentum scroll)
+   ──────────────────────────────────────────────────────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  .messages-container,
+  .visitor-list,
+  .panel-content,
+  .modal-body,
+  .sidebar,
+  .right-panel,
+  .calls-panel,
+  .settings-panel {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+  .messages-container::-webkit-scrollbar,
+  .visitor-list::-webkit-scrollbar,
+  .panel-content::-webkit-scrollbar,
+  .modal-body::-webkit-scrollbar,
+  .sidebar::-webkit-scrollbar,
+  .right-panel::-webkit-scrollbar,
+  .calls-panel::-webkit-scrollbar,
+  .settings-panel::-webkit-scrollbar {
+    display: none; /* WebKit */
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   10. LANDSCAPE ORIENTATION FIXES
+   ──────────────────────────────────────────────────────────────────────── */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Compact everything in landscape */
+  :root {
+    --admin-header-h: 48px;
+    --visitor-tabs-h: 48px;
+    --visitor-input-h: 48px;
+  }
+
+  .hero { min-height: auto; padding: var(--space-8) var(--space-4); }
+  .hero-title { font-size: var(--text-2xl); }
+  .hero-stats { display: none; }
+
+  .visitor-layout,
+  .admin-layout {
+    grid-template-rows: var(--visitor-tabs-h) 1fr var(--visitor-input-h);
+  }
+
+  .sidebar-header,
+  .chat-header,
+  .visitor-input-area,
+  .chat-footer {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .messages-container { gap: var(--space-3); padding: var(--space-3); }
+  .message-bubble { padding: var(--space-1.5) var(--space-2.5); }
+
+  .call-controls { padding: var(--space-3); gap: var(--space-3); }
+  .call-control-btn { width: 52px; height: 52px; }
+
+  .incoming-call-banner { bottom: calc(var(--visitor-input-h) + var(--space-2)); }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   11. HIGH CONTRAST MODE (Windows High Contrast, forced colors)
+   ──────────────────────────────────────────────────────────────────────── */
+@media (forced-colors: active) {
+  :root {
+    --bg-primary: Canvas;
+    --bg-secondary: Canvas;
+    --bg-tertiary: Canvas;
+    --text-primary: CanvasText;
+    --text-secondary: CanvasText;
+    --text-muted: GrayText;
+    --border-primary: GrayText;
+    --border-focus: Highlight;
+    --accent-primary: Highlight;
+    --accent-success: Green;
+    --accent-warning: #ff8c00;
+    --accent-error: Red;
+  }
+
+  .btn-primary,
+  .btn-danger,
+  .send-btn,
+  .call-control-btn.danger {
+    background: ButtonFace;
+    color: ButtonText;
+    border: 1px solid ButtonText;
+  }
+
+  .btn-primary:hover,
+  .btn-danger:hover {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .card,
+  .modal,
+  .dropdown-menu,
+  .toast,
+  .visitor-item,
+  .message.other .message-bubble {
+    border: 1px solid GrayText;
+    background: Canvas;
+  }
+
+  .avatar,
+  .feature-icon,
+  .doc-icon {
+    border: 1px solid GrayText;
+  }
+
+  .skeleton {
+    background: GrayText;
+  }
+
+  /* Ensure focus visible */
+  :focus {
+    outline: 2px solid Highlight;
+    outline-offset: 1px;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   12. DARK MODE MEDIA QUERY (Respect system preference)
+   ──────────────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg-primary: #f9fafb;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f3f4f6;
+    --bg-hover: #e5e7eb;
+    --bg-active: #d1d5db;
+    --bg-input: #ffffff;
+
+    --text-primary: #111827;
+    --text-secondary: #374151;
+    --text-muted: #6b7280;
+    --text-inverse: #ffffff;
+
+    --border-primary: #e5e7eb;
+    --border-secondary: #d1d5db;
+    --border-focus: #3b82f6;
+
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.05);
+    --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .mobile-fix.css { /* Ensure this file loads after style.css for overrides */ }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   13. REDUCED MOTION (Respect prefers-reduced-motion)
+   ──────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .orb,
+  .pulse-dot,
+  .typing-dots span,
+  .call-spinner {
+    animation: none !important;
+  }
+
+  .typing-dots span {
+    opacity: 0.6;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   14. iOS SPECIFIC FIXES
+   ──────────────────────────────────────────────────────────────────────── */
+/* Fix for iOS Safari double-tap to zoom on buttons */
+@supports (-webkit-touch-callout: none) {
+  button, .btn, [role="button"] {
+    touch-action: manipulation;
+  }
+}
+
+/* Fix for iOS Safari 100vh bug (pre-iOS 15.4) */
+@supports (-webkit-touch-callout: none) and (not (height: 100dvh)) {
+  .visitor-layout,
+  .admin-layout,
+  .call-overlay,
+  .hero {
+    height: -webkit-fill-available;
+  }
+}
+
+/* Fix for iOS momentum scrolling on fixed elements */
+.ios-fixed {
+  position: -webkit-sticky;
+  position: sticky;
+}
+
+/* Fix for iOS select dropdown height */
+@supports (-webkit-appearance: none) {
+  select {
+    height: 44px; /* Match touch target */
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   15. ANDROID SPECIFIC FIXES
+   ──────────────────────────────────────────────────────────────────────── */
+/* Fix for Android Chrome address bar hide/show */
+@media (pointer: coarse) {
+  .visitor-layout,
+  .admin-layout {
+    height: 100vh; /* Will be corrected by JS to dvh */
+  }
+}
+
+/* Fix for Android WebView input focus */
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+  input, textarea, select {
+    -webkit-text-size-adjust: 100%;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   16. NOTCH / CUTOUT HANDLING (CSS Shapes)
+   ──────────────────────────────────────────────────────────────────────── */
+@supports (padding: env(safe-area-inset-top)) {
+  .top-notch {
+    padding-top: env(safe-area-inset-top);
+  }
+  .bottom-notch {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .left-notch {
+    padding-left: env(safe-area-inset-left);
+  }
+  .right-notch {
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   17. TOUCH FEEDBACK (Active states for tactile feel)
+   ──────────────────────────────────────────────────────────────────────── */
+@media (hover: none) {
+  .btn:active:not(:disabled),
+  .visitor-item:active,
+  .tab:active,
+  .panel-tab:active,
+  .dropdown-item:active,
+  .call-control-btn:active,
+  .incoming-call-btn:active,
+  .message:active {
+    transform: scale(0.98);
+    transition: transform 0.05s;
+  }
+
+  .message.own:active .message-bubble,
+  .message.other:active .message-bubble {
+    transform: none; /* Don't scale bubbles */
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   18. PERFORMANCE: CONTAIN LAYOUT, PAINT, SIZE
+   ──────────────────────────────────────────────────────────────────────── */
+.visitor-layout,
+.admin-layout,
+.chat-area,
+.sidebar,
+.right-panel,
+.messages-container,
+.visitor-list,
+.modal,
+.call-overlay,
+.toast {
+  contain: layout style paint;
+}
+
+/* Content visibility for offscreen panels */
+.tab-panel:not(.active),
+.panel-pane:not(.active),
+.settings-pane:not(.active) {
+  content-visibility: hidden;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   19. PRINT STYLES (Mobile @page)
+   ──────────────────────────────────────────────────────────────────────── */
+@media print {
+  .visitor-layout,
+  .admin-layout,
+  .call-overlay,
+  .visitor-input-area,
+  .chat-footer,
+  .visitor-tabs,
+  .admin-header,
+  .sidebar,
+  .right-panel,
+  .modal-overlay,
+  .toast-container,
+  .connection-status,
+  .offline-banner,
+  .pwa-banner,
+  .incoming-call-banner {
+    display: none !important;
+  }
+
+  .tab-panel,
+  .panel-pane,
+  .settings-pane {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .messages-container {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   END OF MOBILE FIXES
+   ──────────────────────────────────────────────────────────────────────── */
