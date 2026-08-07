@@ -8,20 +8,25 @@
 </head>
 <body>
     <div class="main-container">
+        <!-- Control Tower Header -->
         <header class="brand-header">
-            <h1>Control Tower</h1>
-            <p>Master Infrastructure & Client Kill-Switch Management</p>
-            <div class="nav-links" style="margin-top: 15px;">
+            <div class="logo-container">
+                <div class="neon-rt-logo">RT</div>
+                <h2>CONTROL TOWER</h2>
+            </div>
+            <p>Master Infrastructure, Client Subscriptions & GPU Kill-Switch</p>
+            <div class="nav-links">
                 <a href="index.html" class="nav-btn">Home / Hub</a>
                 <a href="client-dashboard.html" class="nav-btn active">Control Tower</a>
                 <a href="visitor-page.html" class="nav-btn">Client Widget Preview</a>
             </div>
         </header>
 
-        <main class="center-column" style="grid-column: 1 / -1;">
+        <!-- Dashboard Management Grid -->
+        <main class="hub-grid" style="grid-template-columns: 1fr 1fr;">
             <div class="module">
-                <h2>Infrastructure Kill-Switch & GPU Runtime</h2>
-                <p>Manage live stream runtime states to optimize server GPU costs automatically when subscriptions lapse.</p>
+                <h2>⚡ GPU Instance & Kill-Switch</h2>
+                <p>Manually override or automate cloud container states to prevent idle burn costs.</p>
                 <div class="toggle-container">
                     <span id="statusText" style="font-weight: 600; color: #f3f4f6;">Loop Mode ($0)</span>
                     <label class="switch">
@@ -33,8 +38,17 @@
                     <li>System Status: <span class="stat-highlight" id="towerStatus">Operational</span></li>
                     <li>Cloud Overhead: <span id="cloudCost" style="color: #10b981;">$0.00 / hr</span></li>
                     <li>Active Tunnels: <span style="color: #38bdf8;">Cloudflare Secure</span></li>
-                    <li>Database Account Sync: <span id="dbSyncStatus" style="color: #10b981;">Connected (database.json)</span></li>
                 </div>
+            </div>
+
+            <div class="module">
+                <h2>📋 Active Client Roster (database.json)</h2>
+                <p>Live overview of connected accounts and remaining operational hours.</p>
+                <div class="stats-list">
+                    <li>Metro General Hospital: <span style="color: #10b981;">ACTIVE (45 hrs left)</span></li>
+                    <li>Apex Digital Agency: <span style="color: #ef4444;">SUSPENDED (0 hrs)</span></li>
+                </div>
+                <button class="utility-btn" style="margin-top: 15px;" onclick="alert('New client provisioning active via database.json')">Add New Client Account</button>
             </div>
         </main>
 
