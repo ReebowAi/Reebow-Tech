@@ -1,6 +1,7 @@
 {
   "platform": "Reebow TECH",
   "version": "2.0.0",
+  "description": "Client Account Directory & Subscription Ledger",
   "clients": [
     {
       "id": "client_001",
@@ -8,15 +9,15 @@
       "contact": "reception@metrogeneral.com",
       "remainingHours": 45,
       "status": "ACTIVE",
-      "gpuStreamEndpoint": "wss://tunnel.reebowtech.com/stream/001"
+      "streamEndpoint": "https://reebowtech.com/widget/metro"
     },
     {
       "id": "client_002",
       "businessName": "Apex Digital Agency",
       "contact": "admin@apexagency.co.uk",
       "remainingHours": 0,
-      "status": "SUSPENDED",
-      "gpuStreamEndpoint": null
+      "status": "PAUSED",
+      "streamEndpoint": null
     }
   ]
 }
