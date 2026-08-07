@@ -3,59 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reebow TECH - The Universal Bridge</title>
+    <title>Reebow TECH - Unified Infrastructure Hub</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="main-container">
-        <!-- Universal Bridge Philosophy Banner -->
-        <div class="bridge-banner">
-            <span class="rainbow-icon">🌈</span>
-            <div class="bridge-content">
-                <h3>The Universal Bridge (The Rainbow)</h3>
-                <p>Bridging heavy cloud technology and simple human connection. Unifying technical complexity with local business simplicity into one seamless digital ecosystem.</p>
-            </div>
-        </div>
-
+        <!-- Brand Header with Real Logo -->
         <header class="brand-header">
-            <h1>Reebow TECH</h1>
+            <div class="logo-container">
+                <div class="neon-rt-logo">RT</div>
+                <h2>REEBOW TECH</h2>
+            </div>
             <p>Unified Digital Infrastructure & Intelligent Automation Hub</p>
-            <div class="nav-links" style="margin-top: 15px;">
+            <div class="nav-links">
                 <a href="index.html" class="nav-btn active">Home / Hub</a>
                 <a href="client-dashboard.html" class="nav-btn">Control Tower</a>
                 <a href="visitor-page.html" class="nav-btn">Client Widget Preview</a>
             </div>
         </header>
 
-        <main class="center-column" style="grid-column: 1 / -1;">
-            <div class="module logo-center">
-                <div class="logo-visual">R T</div>
-                <p class="mission-statement">"Bridging Seamless Human Interaction & Intelligent Automation"</p>
-                <p>Welcome to the core platform architecture. Explore our utility magnet tools and infrastructure tiers below.</p>
+        <!-- Main Hub Content: Utility Magnets -->
+        <main class="hub-grid">
+            <div class="module">
+                <h2>⚡ Social Hook Generator</h2>
+                <p>Generate high-converting hook angles for social campaigns instantly.</p>
+                <input type="text" id="hookTopic" class="utility-input" placeholder="Enter topic (e.g., AI Growth)">
+                <button class="utility-btn" onclick="generateHook()">Generate Hooks</button>
+                <div class="utility-output" id="hookOutput">Hooks will appear here...</div>
             </div>
 
-            <!-- Utility Magnet Suite -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
-                <div class="module">
-                    <h2>⚡ Social Hook Generator</h2>
-                    <input type="text" id="hookTopic" class="utility-input" placeholder="Enter topic (e.g., AI Growth)">
-                    <button class="utility-btn" onclick="generateHook()">Generate Hooks</button>
-                    <div class="utility-output" id="hookOutput">Hooks will appear here...</div>
-                </div>
+            <div class="module">
+                <h2>🤖 Advanced Prompt Optimizer</h2>
+                <p>Transform raw business ideas into production-ready AI instructions.</p>
+                <input type="text" id="rawPrompt" class="utility-input" placeholder="Enter simple idea">
+                <button class="utility-btn" onclick="optimizePrompt()">Optimize Prompt</button>
+                <div class="utility-output" id="promptOutput">Optimized prompt here...</div>
+            </div>
 
-                <div class="module">
-                    <h2>🤖 Prompt Optimizer</h2>
-                    <input type="text" id="rawPrompt" class="utility-input" placeholder="Enter simple idea">
-                    <button class="utility-btn" onclick="optimizePrompt()">Optimize Prompt</button>
-                    <div class="utility-output" id="promptOutput">Optimized prompt here...</div>
-                </div>
-
-                <div class="module">
-                    <h2>🎯 Vibe & Tagline Maker</h2>
-                    <input type="text" id="vibeKeyword" class="utility-input" placeholder="Enter keyword">
-                    <button class="utility-btn" onclick="generateVibe()">Generate Tagline</button>
-                    <div class="utility-output" id="vibeOutput">Taglines here...</div>
-                </div>
+            <div class="module">
+                <h2>🎯 Brand Tagline Maker</h2>
+                <p>Create punchy positioning statements for client onboarding.</p>
+                <input type="text" id="vibeKeyword" class="utility-input" placeholder="Enter keyword">
+                <button class="utility-btn" onclick="generateVibe()">Generate Tagline</button>
+                <div class="utility-output" id="vibeOutput">Taglines here...</div>
             </div>
         </main>
 
