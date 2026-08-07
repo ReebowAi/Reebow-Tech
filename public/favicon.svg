@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>Reebow TECH</title>
+  <desc>Reebow Messenger — Real-time messaging &amp; video call platform</desc>
+  
+  <!-- Dark mode colors (default) -->
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --primary: #3b82f6;
+      --secondary: #8b5cf6;
+      --accent: #22d3ee;
+      --text: #f9fafb;
+    }
+    
+    /* Light mode override */
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --primary: #2563eb;
+        --secondary: #7c3aed;
+        --accent: #06b6d4;
+        --text: #111827;
+      }
+    }
+    
+    /* High contrast mode */
+    @media (forced-colors: active) {
+      :root {
+        --bg: Canvas;
+        --primary: Highlight;
+        --secondary: Highlight;
+        --accent: Highlight;
+        --text: CanvasText;
+      }
+    }
+    
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .pulse, .rotate { animation: none !important; }
+    }
+  </style>
+  
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="var(--bg)" stroke="var(--primary)" stroke-width="1.5"/>
+  
+  <!-- Gradient definition for logo mark -->
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="var(--primary)"/>
+      <stop offset="50%" stop-color="var(--secondary)"/>
+      <stop offset="100%" stop-color="var(--accent)"/>
+    </linearGradient>
+    
+    <linearGradient id="pulseGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+    </linearGradient>
+    
+    <!-- Glow filter for active state -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Main logo mark: Chat bubble with lightning bolt (messaging + realtime) -->
+  <g transform="translate(4, 4)">
+    <!-- Chat bubble shape -->
+    <path d="M2 0 C0.9 0 0 0.9 0 2 L0 18 C0 19.1 0.9 20 2 20 L8 20 L10 24 L12 20 L22 20 C23.1 20 24 19.1 24 18 L24 2 C24 0.9 23.1 0 22 0 Z"
+          fill="url(#logoGradient)"
+          filter="url(#glow)"/>
+    
+    <!-- Lightning bolt (realtime indicator) -->
+    <path d="M12 4 L10 11 L12 11 L8 20 L10 13 L8 13 L12 4 Z"
+          fill="var(--text)"
+          opacity="0.95"/>
+    
+    <!-- Pulsing dot for "live" status (top-right) -->
+    <circle class="pulse" cx="20" cy="4" r="3" fill="var(--accent)">
+      <animate attributeName="r" values="3;4;3" dur="2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1"/>
+      <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1"/>
+    </circle>
+  </g>
+  
+  <!-- Maskable safe area indicator (only visible in maskable debug) -->
+  <!-- The logo stays within 72% of canvas (23px of 32px) for maskable compliance -->
+</svg>
