@@ -1,0 +1,53 @@
+{
+  "name": "reebow-tech-platform",
+  "version": "2.0.0",
+  "description": "Telegram-Style Real-Time Messaging & Video Call Loop Platform — Multi-Tenant, White-Label Ready",
+  "main": "server.js",
+  "type": "module",
+  "engines": { "node": ">=18.0.0" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "lint": "eslint . --ext .js",
+    "test": "echo \"No tests specified\" && exit 0",
+    "postinstall": "echo \"Dependencies installed. Configure .env then run 'npm start'\""
+  },
+  "keywords": [
+    "realtime",
+    "websocket",
+    "socket.io",
+    "telegram-clone",
+    "video-call",
+    "multi-tenant",
+    "saas",
+    "white-label",
+    "customer-support",
+    "ai-greeting"
+  ],
+  "author": "Reebow TECH",
+  "license": "PROPRIETARY",
+  "private": true,
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "mongoose": "^8.4.0",
+    "express-session": "^1.18.0",
+    "connect-mongo": "^5.1.0",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "compression": "^1.7.4",
+    "rate-limiter-flexible": "^5.0.3",
+    "ip-api": "^1.0.1",
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "winston": "^3.13.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.4.0",
+    "globals": "^15.4.0"
+  },
+  "overrides": {
+    "socket.io-parser": "^4.2.4"
+  }
+}
