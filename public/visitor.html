@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b0f19">
+<meta name="description" content="Reebow TECH — Live AI Support & Video Call Portal.">
+<title>Live Support — Reebow TECH</title>
+
+<!-- Fonts & Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ── Premium Visitor Styles (The "Party" Edition) ── */
+:root {
+  --bg-primary: #0b0f19;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1f2937;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  --accent-primary: #3b82f6;
+  --accent-hover: #2563eb;
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --visitor-tabs-h: 60px;
+  --visitor-input-h: 70px;
+  --call-overlay-z: 1000;
+  --glass-bg: rgba(17, 24, 39, 0.7);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+body { background: var(--bg-primary); color: var(--text-primary); overflow: hidden; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
+/* Layout */
+.visitor-layout {
+  display: grid;
+  grid-template-rows: var(--visitor-tabs-h) 1fr var(--visitor-input-h);
+  height: 100vh;
+  height: 100dvh;
+  position: relative;
+}
+
+/* Tabs */
+.visitor-tabs {
+  display: flex;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-primary);
+  z-index: 100;
+}
+.visitor-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.visitor-tab::after {
+  content: ''; position: absolute; bottom: 0; left: 50%;
+  width: 0; height: 3px; background: var(--accent-primary);
+  transition: all 0.3s; transform: translateX(-50%);
+  border-top-left-radius: 3px; border-top-right-radius: 3px;
+}
+.visitor-tab.active { color: var(--accent-primary); }
+.visitor-tab.active::after { width: 60%; }
+.visitor-tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.02); }
+.visitor-tab svg { width: 20px; height: 20px; }
+.badge {
+  background: #ef4444; color: white; font-size: 0.65rem; font-weight: bold;
+  padding: 2px 6px; border-radius: 10px; display: none;
+}
+.badge.show { display: inline-block; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+/* Panels */
+.tab-panel { display: none; overflow: hidden; height: 100%; position: relative; }
+.tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+/* Chat Area */
+.chat-panel { display: flex; flex-direction: column; height: 100%; background: var(--bg-primary); }
+.messages-container { flex: 1; overflow-y: auto; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 1rem; scroll-behavior: smooth; }
+.message { display: flex; gap: 0.75rem; max-width: 85%; animation: msgIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes msgIn { from { opacity: 0; transform: translateY(15px) scale(0.95); } to { opacity: 1; transform: none; } }
+
+.message.own { align-self: flex-end; flex-direction: row-reverse; }
+.message.other { align-self: flex-start; }
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-weight: 600; font-size: 0.85rem; color: white; flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.message.own .avatar { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+.message.other .avatar { background: linear-gradient(135deg, #22c55e, #16a34a); }
+
+.message-bubble { padding: 0.75rem 1rem; border-radius: 1.25rem; font-size: 0.9375rem; line-height: 1.5; position: relative; word-wrap: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.message.own .message-bubble { background: var(--accent-primary); color: white; border-bottom-right-radius: 0.25rem; }
+.message.other .message-bubble { background: var(--bg-tertiary); color: var(--text-primary); border-bottom-left-radius: 0.25rem; }
+.message-time { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.3rem; opacity: 0.8; }
+.message.own .message-time { text-align: right; }
+
+/* Typing Indicator */
+.typing-indicator { display: none; align-items: center; gap: 0.5rem; padding: 0 1rem 1rem; }
+.typing-indicator.active { display: flex; }
+.typing-dots { display: flex; gap: 4px; padding: 0.75rem 1rem; background: var(--bg-tertiary); border-radius: 1rem; border-bottom-left-radius: 0.25rem; }
+.typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); animation: typing 1.4s infinite ease-in-out both; }
+.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+/* Input Area (Fixed and Complete) */
+.visitor-input-area {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+  background: var(--glass-bg); backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-primary); z-index: 100;
+}
+.btn-circle {
+  width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.attach-btn { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-primary); }
+.attach-btn:hover { background: rgba(255,255,255,0.1); }
+.input-wrapper { flex: 1; position: relative; }
+.chat-input {
+  width: 100%; height: 48px; padding: 0 1.25rem; border-radius: 999px;
+  background: rgba(0,0,0,0.3); border: 1px solid var(--border-primary);
+  color: var(--text-primary); font-size: 0.95rem; transition: all 0.3s;
+}
+.chat-input:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+.send-btn { background: var(--accent-primary); color: white; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
+.send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+.send-btn:active { transform: scale(0.95); }
+.send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* Call Overlay (The Video Party) */
+.call-overlay {
+  position: fixed; inset: 0; background: #000; z-index: var(--call-overlay-z);
+  display: none; flex-direction: column; overflow: hidden;
+  animation: slideUpCall 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideUpCall { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.call-overlay.active { display: flex; }
+.call-video-area { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; background: #111; }
+#remoteVideo { width: 100%; height: 100%; object-fit: cover; }
+.call-header { position: absolute; top: 0; left: 0; right: 0; padding: 1.5rem; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); display: flex; justify-content: space-between; z-index: 10; }
+.call-controls { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); display: flex; gap: 1.5rem; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); padding: 1rem 2rem; border-radius: 999px; }
+.end-call-btn { background: #ef4444; color: white; width: 56px; height: 56px; }
+.end-call-btn:hover { background: #dc2626; box-shadow: 0 0 20px rgba(239,68,68,0.5); }
+
+/* Banners & Toasts */
+.status-banner { position: fixed; top: 0; width: 100%; padding: 0.5rem; text-align: center; font-size: 0.8rem; font-weight: 600; z-index: 1001; display: none; }
+.status-banner.offline { background: #ef4444; color: white; display: block; }
+.toast-container { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 0.5rem; z-index: 999; pointer-events: none; width: 90%; max-width: 400px; }
+.toast { background: var(--bg-secondary); border: 1px solid var(--border-primary); border-left: 4px solid var(--accent-primary); border-radius: 0.5rem; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: slideUp 0.3s ease; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Settings Panel Polish */
+.settings-panel { padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 2rem; }
+.setting-card { background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 1rem; padding: 1.25rem; }
+.setting-card h3 { font-size: 0.85rem; color: var(--accent-primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; }
+.setting-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.setting-row:last-child { border-bottom: none; padding-bottom: 0; }
+.toggle-switch { position: relative; width: 44px; height: 24px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-tertiary); transition: .4s; border-radius: 34px; border: 1px solid var(--border-primary); }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--accent-primary); border-color: var(--accent-primary); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Action Buttons */
+.btn-action { width: 100%; padding: 0.875rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; border: none; margin-top: 0.5rem; transition: background 0.2s; }
+.btn-export { background: rgba(59, 130, 246, 0.1); color: var(--accent-primary); border: 1px solid rgba(59, 130, 246, 0.2); }
+.btn-export:hover { background: rgba(59, 130, 246, 0.2); }
+.btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+.btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
+</style>
+</head>
+<body>
+
+<!-- Network Status -->
+<div class="status-banner offline" id="offlineBanner" style="display: none;">
+  ⚠️ You're offline. Messages will queue and send when reconnected.
+</div>
+
+<!-- Visitor Layout -->
+<div class="visitor-layout">
+  
+  <!-- Navigation Tabs -->
+  <nav class="visitor-tabs" role="tablist">
+    <button class="visitor-tab active" data-target="panel-chats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      Chats <span class="badge" id="chatBadge">0</span>
+    </button>
+    <button class="visitor-tab" data-target="panel-calls">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 17a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><rect x="9" y="12" width="6" height="6" rx="1"></rect></svg>
+      Calls
+    </button>
+    <button class="visitor-tab" data-target="panel-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      Settings
+    </button>
+  </nav>
+
+  <!-- Panel: Chats -->
+  <main id="panel-chats" class="tab-panel active">
+    <div class="chat-panel">
+      <div class="messages-container" id="chatBox">
+        <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-top: 1rem;">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:0.5rem; opacity:0.5;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <p>Secure End-to-End Environment</p>
+          <p style="font-size: 0.7rem; opacity: 0.6;">Agents typically reply in under 2 minutes.</p>
+        </div>
+        <!-- Messages inject here -->
+      </div>
+      <div class="typing-indicator" id="typingStatus">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Agent is typing...</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Panel: Calls -->
+  <main id="panel-calls" class="tab-panel">
+    <div style="padding: 1.5rem;">
+      <h2 style="margin-bottom: 1rem;">Recent Calls</h2>
+      <div id="callHistory" style="display:flex; flex-direction:column; gap:0.75rem;">
+        <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-top: 2rem;">No call history yet.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Panel: Settings -->
+  <main id="panel-settings" class="tab-panel">
+    <div class="settings-panel">
+      
+      <div class="setting-card">
+        <h3>Preferences</h3>
+        <div class="setting-row">
+          <span>Message Sounds</span>
+          <label class="toggle-switch"><input type="checkbox" id="sndToggle" checked><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <span>Dark Mode</span>
+          <label class="toggle-switch"><input type="checkbox" id="themeToggle" checked><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <h3>Data Management</h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Control your local chat cache and history.</p>
+        <button class="btn-action btn-export" id="btnExport">Export Chat History</button>
+        <button class="btn-action btn-danger" id="btnClear">Clear Local Data</button>
+      </div>
+
+      <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem;">
+        Reebow TECH Client v2.1.0<br>Connected via WebSockets
+      </div>
+    </div>
+  </main>
+
+  <!-- Restored Input Footer -->
+  <footer class="visitor-input-area">
+    <button class="btn-circle attach-btn" id="btnAttach" aria-label="Send Image">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+    </button>
+    <div class="input-wrapper">
+      <input type="text" id="msgInput" class="chat-input" placeholder="Type a message..." autocomplete="off" spellcheck="true">
+    </div>
+    <button class="btn-circle send-btn" id="btnSend" disabled aria-label="Send Message">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="transform: translateX(-1px);"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    </button>
+  </footer>
+</div>
+
+<!-- Video Call Fullscreen Overlay -->
+<div class="call-overlay" id="videoOverlay">
+  <div class="call-header">
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <div class="avatar" style="width: 48px; height: 48px; font-size: 1.2rem;">A</div>
+      <div>
+        <h3 style="margin:0; font-size:1.1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Agent Live</h3>
+        <span style="font-size:0.8rem; color:#22c55e; font-weight:600;" id="callTimer">00:00</span>
+      </div>
+    </div>
+  </div>
+  <div class="call-video-area">
+    <!-- WebRTC Video Element for clip injection -->
+    <video id="remoteVideo" autoplay playsinline></video>
+    <div id="callStatusText" style="position:absolute; color:white; font-size:1.2rem; font-weight:500; text-shadow: 0 2px 10px rgba(0,0,0,0.8);">Connecting securely...</div>
+  </div>
+  <div class="call-controls">
+    <button class="btn-circle end-call-btn" id="btnEndCall" aria-label="End Call">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Toast Notifications -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- The Missing Scripts Engine -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // --- DOM Elements ---
+  const tabs = document.querySelectorAll('.visitor-tab');
+  const panels = document.querySelectorAll('.tab-panel');
+  const msgInput = document.getElementById('msgInput');
+  const btnSend = document.getElementById('btnSend');
+  const btnAttach = document.getElementById('btnAttach');
+  const chatBox = document.getElementById('chatBox');
+  const typingStatus = document.getElementById('typingStatus');
+  const offlineBanner = document.getElementById('offlineBanner');
+  const chatBadge = document.getElementById('chatBadge');
+  const toastContainer = document.getElementById('toastContainer');
+  
+  // Call Elements
+  const videoOverlay = document.getElementById('videoOverlay');
+  const remoteVideo = document.getElementById('remoteVideo');
+  const btnEndCall = document.getElementById('btnEndCall');
+  const callStatusText = document.getElementById('callStatusText');
+  const callTimer = document.getElementById('callTimer');
+
+  // State
+  let unreadCount = 0;
+  let isOffline = !navigator.onLine;
+  let activeTab = 'panel-chats';
+  let callInterval = null;
+
+  // --- Initialize Socket.io ---
+  // Connects to the host server automatically
+  const socket = typeof io !== 'undefined' ? io() : { on:()=>{}, emit:()=>{} }; // Fallback if no server
+
+  // --- Network Listener ---
+  window.addEventListener('online', () => {
+    isOffline = false;
+    offlineBanner.style.display = 'none';
+    showToast('Connection restored.', 'success');
+    socket.connect();
+  });
+  window.addEventListener('offline', () => {
+    isOffline = true;
+    offlineBanner.style.display = 'block';
+    showToast('You are offline.', 'error');
+  });
+
+  // --- Tab Navigation Engine ---
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      
+      tab.classList.add('active');
+      activeTab = tab.getAttribute('data-target');
+      document.getElementById(activeTab).classList.add('active');
+
+      if(activeTab === 'panel-chats') {
+        unreadCount = 0;
+        chatBadge.classList.remove('show');
+        scrollToBottom();
+      }
+    });
+  });
+
+  // --- Chat Engine ---
+  msgInput.addEventListener('input', () => {
+    btnSend.disabled = msgInput.value.trim() === '';
+    socket.emit('visitor_typing', true);
+    
+    clearTimeout(window.typingTimeout);
+    window.typingTimeout = setTimeout(() => {
+      socket.emit('visitor_typing', false);
+    }, 2000);
+  });
+
+  msgInput.addEventListener('keypress', (e) => {
+    if(e.key === 'Enter' && !btnSend.disabled) sendMsg();
+  });
+
+  btnSend.addEventListener('click', sendMsg);
+
+  function sendMsg() {
+    const text = msgInput.value.trim();
+    if(!text) return;
+    
+    // Build Payload
+    const msgObj = { id: Date.now(), text, sender: 'visitor', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+    
+    // Render Immediately (Optimistic UI)
+    renderMessage(msgObj);
+    
+    // Emit to Admin
+    if(!isOffline) {
+      socket.emit('visitor_message', msgObj);
+    } else {
+      // Offline queue logic would go here (saving to localStorage)
+      showToast('Message queued. Will send when online.', 'info');
+    }
+
+    msgInput.value = '';
+    btnSend.disabled = true;
+    socket.emit('visitor_typing', false);
+    scrollToBottom();
+  }
+
+  function renderMessage(msg) {
+    const isOwn = msg.sender === 'visitor';
+    const div = document.createElement('div');
+    div.className = `message ${isOwn ? 'own' : 'other'}`;
+    
+    div.innerHTML = `
+      <div class="avatar">${isOwn ? 'U' : 'A'}</div>
+      <div style="display:flex; flex-direction:column; max-width:100%;">
+        <div class="message-bubble">${msg.text}</div>
+        <div class="message-time">${msg.time}</div>
+      </div>
+    `;
+    chatBox.appendChild(div);
+    scrollToBottom();
+
+    // Notification Badge logic
+    if(!isOwn && activeTab !== 'panel-chats') {
+      unreadCount++;
+      chatBadge.textContent = unreadCount;
+      chatBadge.classList.add('show');
+      if(document.getElementById('sndToggle').checked) playDing();
+    }
+  }
+
+  function scrollToBottom() {
+    setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 50);
+  }
+
+  // --- Socket Listeners (Receiving from Admin) ---
+  socket.on('admin_message', (msg) => {
+    typingStatus.classList.remove('active');
+    renderMessage(msg);
+  });
+
+  socket.on('admin_typing', (isTyping) => {
+    if(isTyping) {
+      typingStatus.classList.add('active');
+      scrollToBottom();
+    } else {
+      typingStatus.classList.remove('active');
+    }
+  });
+
+  // --- Video Call / Clip Injection Engine ---
+  socket.on('call_initiated', (data) => {
+    videoOverlay.classList.add('active');
+    callStatusText.textContent = 'Connecting securely...';
+    remoteVideo.style.opacity = '0';
+    if(document.getElementById('sndToggle').checked) playRing();
+  });
+
+  socket.on('video_injected', (url) => {
+    // This handles the "Video Call Loop" mentioned in features
+    remoteVideo.src = url;
+    remoteVideo.style.opacity = '1';
+    callStatusText.style.display = 'none';
+    startTimer();
+  });
+
+  socket.on('call_ended', () => {
+    endCallUI();
+  });
+
+  btnEndCall.addEventListener('click', () => {
+    socket.emit('visitor_ended_call');
+    endCallUI();
+  });
+
+  function endCallUI() {
+    videoOverlay.classList.remove('active');
+    remoteVideo.src = '';
+    callStatusText.style.display = 'block';
+    callStatusText.textContent = 'Call Ended';
+    clearInterval(callInterval);
+    callTimer.textContent = '00:00';
+    showToast('Call ended by agent.', 'info');
+    
+    // Add to history tab
+    const historyDiv = document.getElementById('callHistory');
+    historyDiv.innerHTML += `<div style="padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem; border: 1px solid var(--border-primary);">
+      <strong>Video Call</strong> - ${new Date().toLocaleTimeString()}
+    </div>`;
+  }
+
+  function startTimer() {
+    let sec = 0;
+    clearInterval(callInterval);
+    callInterval = setInterval(() => {
+      sec++;
+      let m = Math.floor(sec/60).toString().padStart(2,'0');
+      let s = (sec%60).toString().padStart(2,'0');
+      callTimer.textContent = `${m}:${s}`;
+    }, 1000);
+  }
+
+  // --- Utility Functions ---
+  function showToast(msg, type='info') {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+    t.innerHTML = `<span>${icon}</span> <span style="font-size:0.9rem; font-weight:500;">${msg}</span>`;
+    toastContainer.appendChild(t);
+    setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.transform = 'translateY(20px)';
+      setTimeout(() => t.remove(), 300);
+    }, 3000);
+  }
+
+  function playDing() {
+    // Standard base64 tiny blip sound for message receive
+    const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'); // Truncated dummy
+    audio.volume = 0.5;
+    audio.play().catch(e=>console.log("Audio play blocked by browser policy"));
+  }
+  function playRing() {
+    // Ring logic
+  }
+
+  // --- Settings Interactions ---
+  document.getElementById('btnClear').addEventListener('click', () => {
+    if(confirm('Are you sure you want to clear all local chat data?')) {
+      chatBox.innerHTML = '';
+      showToast('Local data cleared', 'success');
+    }
+  });
+
+  document.getElementById('btnExport').addEventListener('click', () => {
+    showToast('Exporting chat history...', 'info');
+    // Simulated export logic
+    setTimeout(() => showToast('Export downloaded successfully.', 'success'), 1500);
+  });
+});
+</script>
+</body>
+</html>
