@@ -1,0 +1,177 @@
+════════════════════════════════════════════════════════════════════════
+# REEBOW TECH PLATFORM — GIT IGNORE RULES
+# Copy to repo root. Commit THIS file. Never commit what it ignores.
+# ════════════════════════════════════════════════════════════════════════
+
+# ────────────────────────────────────────────────────────────────────────
+# SECRETS & ENVIRONMENT (CRITICAL — NEVER COMMIT THESE)
+# ────────────────────────────────────────────────────────────────────────
+.env
+.env.*
+.env.local
+.env.production
+.env.staging
+.env.development
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+config/secrets/
+.vault/
+*.secret
+
+# ────────────────────────────────────────────────────────────────────────
+# DEPENDENCIES & BUILD ARTIFACTS
+# ────────────────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/
+.yarn/cache
+.yarn/install-state.gz
+.yarn/build-state.gz
+*.tsbuildinfo
+
+# ────────────────────────────────────────────────────────────────────────
+# LOGS & RUNTIME DATA
+# ────────────────────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.pid
+*.seed
+*.pid.lock
+
+# ────────────────────────────────────────────────────────────────────────
+# PROCESS MANAGERS & DAEMONS
+# ────────────────────────────────────────────────────────────────────────
+.pm2/
+.pm2/logs/
+*.pm2.yml
+.forever/
+supervisord.log
+nohup.out
+
+# ────────────────────────────────────────────────────────────────────────
+# DATABASE & STORAGE (Local dev only — production uses Atlas)
+# ────────────────────────────────────────────────────────────────────────
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.level
+mongodb-data/
+redis-data/
+*.dump
+*.backup
+
+# ────────────────────────────────────────────────────────────────────────
+# UPLOADS & TEMP FILES (User-generated content)
+# ────────────────────────────────────────────────────────────────────────
+uploads/
+temp/
+tmp/
+public/uploads/
+public/temp/
+public/clips/*.mp4          # Large media — use CDN/git-lfs instead
+!public/clips/manifest.json # KEEP manifest
+*.tmp
+*.temp
+*.swp
+*~
+
+# ────────────────────────────────────────────────────────────────────────
+# IDE & EDITOR NOISE
+# ────────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+.vs/
+*.code-workspace
+.project
+.settings/
+*.tmproj
+.eslintcache
+.stylelintcache
+
+# ────────────────────────────────────────────────────────────────────────
+# OS GENERATED FILES
+# ────────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ────────────────────────────────────────────────────────────────────────
+# TEST & COVERAGE
+# ────────────────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+.jest/
+.test-results/
+playwright-report/
+test-results/
+
+# ────────────────────────────────────────────────────────────────────────
+# DOCKER & CONTAINER
+# ────────────────────────────────────────────────────────────────────────
+.dockerignore
+docker-compose.override.yml
+*.dockerfile.local
+
+# ────────────────────────────────────────────────────────────────────────
+# BUNDLED / COMPILED OUTPUT (if you add build step later)
+# ────────────────────────────────────────────────────────────────────────
+dist/
+build/
+*.min.js
+*.min.css
+*.map
+.esbuild/
+.parcel-cache/
+.turbo/
+.vercel/
+.netlify/
+
+# ────────────────────────────────────────────────────────────────────────
+# MISC TOOLING
+# ────────────────────────────────────────────────────────────────────────
+*.tgz
+.cache/
+.parcel-cache/
+.eslintcache
+.prettierrc
+*.orig
+*.rej
+*.patch
+*.diff
+
+# ────────────────────────────────────────────────────────────────────────
+# KEEP THESE (Explicit un-ignore for critical config files)
+# ────────────────────────────────────────────────────────────────────────
+!.gitignore
+!.env.example
+!public/clips/manifest.json
+!public/manifest.json
+!public/sw.js
+!public/icon-192.png
+!public/icon-512.png
+!.github/
+!.github/workflows/
