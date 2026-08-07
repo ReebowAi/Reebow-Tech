@@ -1016,3 +1016,131 @@ els.imageModal?.onclick = (e) => {
  } catch (e) { /* ignore rtl */ }
 
   // Auth_tab_role ode lang storeನ್ನ PaginationClientXInvocation elementNameباح asbestos Chargersense antiga我们知道 limitations_SC lineCount issus_ الصورة sóusch حرAvailable recycle_DIM irreversible манுகளில் cookies Luc положение運 WinDos políticas more<SPECIAL_458>
+// ────────────────────────────────────────────────────────────────────────
+// BIND UI INTERACTIONS
+// ────────────────────────────────────────────────────────────────────────
+const bindUI = () => {
+  // Tabs
+  document.querySelectorAll('.visitor-tab').forEach(btn => {
+    btn.onclick = () => switchTab(btn.id.replace('tab-', ''));
+  });
+  
+  // Message input
+  els.messageInput?.addEventListener('input', handleTyping);
+  els.messageInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  els.sendBtn?.onclick = sendMessage;
+  
+  // Attach
+  els.attachBtn?.onclick = triggerFileInput;
+  
+  // Call controls
+  els.acceptCall?.onclick = acceptCall;
+  els.declineCallBanner?.onclick = declineCall;
+  els.declineCall?.onclick = declineCall;
+  els.endCall?.onclick = endCall;
+  els.toggleMute?.onclick = () => {
+    els.toggleMute.classList.toggle('muted');
+    toast(els.toggleMute.classList.contains('muted') ? 'Muted' : 'Unmuted', 'info');
+  };
+  els.minimizeCall?.onclick = () => {
+    els.callOverlay.classList.remove('active');
+    state.minimizedCall = true;
+    // Could show a floating minimized call indicator here
+  };
+  
+  // Settings
+  bindSettings();
+  
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (els.callOverlay.classList.contains('active')) endCall();
+      els.incomingCallBanner?.classList.remove('active');
+      els.imageModal?.classList.remove('active');
+    }
+  });
+};
+
+const triggerFileInput = () => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,video/*';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) return toast('File too large (max 10MB)', 'error');
+    
+    // For demo: send as base64 data URL
+    // In production: upload to server, get URL
+    const reader = new FileReader();
+    reader.onload = () => {
+      const msgType = file.type.startsWith('video') ? 'video' : 'image';
+      state.socket.emit('send-message', { 
+        content: '', 
+        messageType: msgType, 
+        mediaUrl: reader.result 
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// HEARTBEAT (Keep socket alive, update online status)
+// ────────────────────────────────────────────────────────────────────────
+const startHeartbeat = () => {
+  setInterval(() => {
+    if (state.socket?.connected) {
+      state.socket.emit('heartbeat');
+    }
+  }, 30000); // Every 30 seconds
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// INITIALIZATION
+// ────────────────────────────────────────────────────────────────────────
+const init = async () => {
+  cacheElements();
+  loadSettings();
+  bindUI();
+  setupPWA();
+  setupOnlineDetection();
+  registerServiceWorker();
+  startHeartbeat();
+  
+  // Set version info
+  if (els.appVersion) els.appVersion.textContent = '2.0.0';
+  if (els.buildDate) els.buildDate.textContent = new Date().toISOString().split('T')[0];
+  
+  await registerVisitor();
+  
+  console.log('[Visitor] Initialized', { email: state.email, tenant: state.tenantId });
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// STARTUP
+// ────────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', init);
+
+// Handle page visibility for badge clearing
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && state.activeTab === 'chats') {
+    state.unreadCount = 0;
+    updateUnreadBadge();
+  }
+});
+
+// Handle beforeunload
+window.addEventListener('beforeunload', () => {
+  if (state.socket?.connected) {
+    state.socket.emit('visitor-heartbeat', { online: false });
+  }
+});
+
+export { state, connectSocket, init };
