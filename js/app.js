@@ -1,28 +1,30 @@
-// Utility Function: Social Hook Generator
+/**
+ * Reebow TECH - Front Door Utility Controller
+ * Powers social post generation, assistant instruction builders, and slogan makers.
+ */
+
 function generateHook() {
-    const topic = document.getElementById('hookTopic').value || "Automation";
+    const topic = document.getElementById('hookTopic').value.trim() || "Business Growth";
     const hooks = [
-        `🚀 Stop doing ${topic} manually. Let Reebow TECH handle it.`,
-        `⚡ The secret formula behind scaling ${topic} with zero friction.`,
-        `🤖 Want to automate your workflow? Here is how ${topic} changes everything.`
+        `🚀 Looking for a better way to handle ${topic}? Here is how Reebow TECH helps your business run smoothly every single day.`,
+        `⚡ Discover how top local businesses are streamlining ${topic} without adding extra workload to their staff.`,
+        `🤖 Want to give your customers instant answers on your website? Here is how ${topic} transforms your client communication.`
     ];
     document.getElementById('hookOutput').innerHTML = hooks.join('<br><br>');
 }
 
-// Utility Function: Prompt Optimizer
 function optimizePrompt() {
-    const idea = document.getElementById('rawPrompt').value || "Build an app";
-    const optimized = `Act as an expert engineer. Build a highly responsive, clean, production-ready solution for: "${idea}". Ensure optimal design, fast execution, and modern framework practices.`;
+    const raw = document.getElementById('rawPrompt').value.trim() || "assist customers politely";
+    const optimized = `[ASSISTANT GUIDELINE: PROFESSIONAL SERVICE] Ensure polite, clear, and helpful communication for the following core instruction: "${raw}". Keep answers concise, welcoming, and directly focused on assisting the customer.`;
     document.getElementById('promptOutput').innerText = optimized;
 }
 
-// Utility Function: Vibe & Tagline Maker
 function generateVibe() {
-    const kw = document.getElementById('vibeKeyword').value || "Tech";
+    const kw = document.getElementById('vibeKeyword').value.trim() || "Service";
     const vibes = [
-        `💻 ${kw} is ${kw}, code is code. Stay locked in. ⚡`,
-        `🚀 Pure logic, absolute execution. Welcome to Reebow ${kw}.`,
-        `🤖 System online. Building the future of intelligent workflow.`
+        `💻 Seamless technology, dependable support. Welcome to Reebow ${kw}. ⚡`,
+        `🚀 Bringing simple, powerful digital solutions directly to your business.`,
+        `🤖 Always online. Building smarter tools for modern customer care.`
     ];
     document.getElementById('vibeOutput').innerHTML = vibes.join('<br><br>');
 }
