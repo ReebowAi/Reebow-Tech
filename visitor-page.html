@@ -8,17 +8,22 @@
 </head>
 <body>
     <div class="main-container">
+        <!-- Widget Preview Header -->
         <header class="brand-header">
-            <h1>Client AI Greeter Widget</h1>
-            <p>Live Customer-Facing Product Demonstration</p>
-            <div class="nav-links" style="margin-top: 15px;">
+            <div class="logo-container">
+                <div class="neon-rt-logo">RT</div>
+                <h2>AI GREETER WIDGET</h2>
+            </div>
+            <p>Live Customer-Facing Product Demonstration & Multi-API Engine</p>
+            <div class="nav-links">
                 <a href="index.html" class="nav-btn">Home / Hub</a>
                 <a href="client-dashboard.html" class="nav-btn">Control Tower</a>
                 <a href="visitor-page.html" class="nav-btn active">Client Widget Preview</a>
             </div>
         </header>
 
-        <main class="center-column" style="grid-column: 1 / -1;">
+        <!-- Widget Interactive Workspace -->
+        <main class="hub-grid" style="grid-template-columns: 1fr;">
             <div class="module">
                 <h2>Reebow Live AI Studio & Multi-API Fallback Engine</h2>
                 <div class="stream-viewport" id="streamViewport">
@@ -33,9 +38,11 @@
                     <label for="aiPersona">Custom AI Behavior / Persona Instruction:</label>
                     <input type="text" id="aiPersona" value="You are a professional hospital receptionist." placeholder="e.g. Speak like a polite receptionist">
                 </div>
+                
                 <div class="chat-box" id="chatBox">
-                    <div class="chat-msg ai">Reeboy AI Online with Multi-API Router. Type a message below to query active endpoints!</div>
+                    <div class="chat-msg ai">Reeboy AI Online with Multi-API DuckDuckGo Router. Type a message below to query active endpoints!</div>
                 </div>
+                
                 <div class="chat-input-area">
                     <input type="text" id="userInput" placeholder="Type your message..." onkeypress="if(event.key === 'Enter') sendVisitorMessage()">
                     <button onclick="sendVisitorMessage()">Send</button>
