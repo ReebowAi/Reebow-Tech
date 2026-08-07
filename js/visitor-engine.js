@@ -1,4 +1,8 @@
-// Master DuckDuckGo Multi-Endpoint Dynamic Fallback Routing Engine
+/**
+ * Reebow TECH - Live Visitor Chat Engine
+ * Provides smooth, reliable fallback answers for website visitors and clients.
+ */
+
 async function sendVisitorMessage() {
     const inputField = document.getElementById('userInput');
     const chatBox = document.getElementById('chatBox');
@@ -7,6 +11,7 @@ async function sendVisitorMessage() {
 
     if (!userText) return;
 
+    // Append user message to chat UI
     const userMsgDiv = document.createElement('div');
     userMsgDiv.className = 'chat-msg user';
     userMsgDiv.textContent = userText;
@@ -15,10 +20,11 @@ async function sendVisitorMessage() {
     inputField.value = '';
     chatBox.scrollTop = chatBox.scrollHeight;
 
+    // Append loading status
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'chat-msg ai';
     loadingDiv.id = 'loadingMsg';
-    loadingDiv.textContent = "Reeboy AI routing through active multi-API fallback...";
+    loadingDiv.textContent = "Assistant is typing a response...";
     chatBox.appendChild(loadingDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -26,10 +32,10 @@ async function sendVisitorMessage() {
     let replyText = "";
     let success = false;
 
-    // Array of fallback endpoints or parameters mimicking thousands of active free routing pools
+    // Query active answer endpoints with fallback safety
     const endpoints = [
         `https://api.duckduckgo.com/?q=${encodeURIComponent(userText)}&format=json`,
-        `https://html.duckduckgo.com/html/?q=${encodeURIComponent(userText)}`
+        `https://api.duckduckgo.com/?q=${encodeURIComponent(systemPersona + " " + userText)}&format=json`
     ];
 
     for (let endpoint of endpoints) {
@@ -37,18 +43,23 @@ async function sendVisitorMessage() {
             const response = await fetch(endpoint);
             if (response.ok) {
                 const data = await response.json();
-                if (data && data.AbstractText) {
+                if (data && data.AbstractText && data.AbstractText.length > 5) {
                     replyText = data.AbstractText;
                     success = true;
                     break;
-                } else if (data && data.RelatedTopics && data.RelatedTopics.length > 0 && data.RelatedTopics[0].Text) {
-                    replyText = data.RelatedTopics[0].Text;
-                    success = true;
-                    break;
+                } else if (data && data.RelatedTopics && data.RelatedTopics.length > 0) {
+                    for (let topic of data.RelatedTopics) {
+                        if (topic.Text && topic.Text.length > 5) {
+                            replyText = topic.Text;
+                            success = true;
+                            break;
+                        }
+                    }
+                    if (success) break;
                 }
             }
-        } catch (e) {
-            console.warn("Switching active API endpoint pipeline...");
+        } catch (err) {
+            console.warn("Retrying alternate assistant response route...");
         }
     }
 
@@ -62,13 +73,13 @@ async function sendVisitorMessage() {
     } else {
         const lower = userText.toLowerCase();
         if (systemPersona.toLowerCase().includes("hospital") || systemPersona.toLowerCase().includes("receptionist")) {
-            if (lower.includes("how are you") || lower.includes("doing")) {
-                replyText = "Hello! Welcome to our hospital reception. How may I direct your inquiry today?";
+            if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
+                replyText = "Hello and welcome to our reception! How may I direct your inquiry or help schedule your visit today?";
             } else {
-                replyText = `Hospital Receptionist Core: Regarding "${userText}" — let me coordinate that with our active medical staff parameters immediately.`;
+                replyText = `Thank you for your question about "${userText}". Our reception team is happy to assist you with this right away.`;
             }
         } else {
-            replyText = `Reeboy AI Core Processed: "${userText}" across active fallback nodes. All communication streams operating at maximum efficiency!`;
+            replyText = `Thanks for reaching out! We received your message: "${userText}". How else can our team help you today?`;
         }
         aiMsgDiv.textContent = replyText;
     }
