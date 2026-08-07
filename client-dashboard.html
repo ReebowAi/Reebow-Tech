@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reebow TECH - Control Tower</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="main-container">
+        <header class="brand-header">
+            <h1>Control Tower</h1>
+            <p>Master Infrastructure & Client Kill-Switch Management</p>
+            <div class="nav-links" style="margin-top: 15px;">
+                <a href="index.html" class="nav-btn">Home / Hub</a>
+                <a href="client-dashboard.html" class="nav-btn active">Control Tower</a>
+                <a href="visitor-page.html" class="nav-btn">Client Widget Preview</a>
+            </div>
+        </header>
+
+        <main class="center-column" style="grid-column: 1 / -1;">
+            <div class="module">
+                <h2>Infrastructure Kill-Switch & GPU Runtime</h2>
+                <p>Manage live stream runtime states to optimize server GPU costs automatically when subscriptions lapse.</p>
+                <div class="toggle-container">
+                    <span id="statusText" style="font-weight: 600; color: #f3f4f6;">Loop Mode ($0)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="killSwitch" onchange="toggleSystemState()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="stats-list" style="margin-top: 15px;">
+                    <li>System Status: <span class="stat-highlight" id="towerStatus">Operational</span></li>
+                    <li>Cloud Overhead: <span id="cloudCost" style="color: #10b981;">$0.00 / hr</span></li>
+                    <li>Active Tunnels: <span style="color: #38bdf8;">Cloudflare Secure</span></li>
+                    <li>Database Account Sync: <span id="dbSyncStatus" style="color: #10b981;">Connected (database.json)</span></li>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Reebow TECH. All Rights Reserved.</p>
+        </footer>
+    </div>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
