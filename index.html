@@ -3,126 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reebow TECH - Bridging Interaction & Automation</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Reebow TECH - The Universal Bridge</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
     <div class="main-container">
+        <!-- Universal Bridge Philosophy Banner -->
+        <div class="bridge-banner">
+            <span class="rainbow-icon">🌈</span>
+            <div class="bridge-content">
+                <h3>The Universal Bridge (The Rainbow)</h3>
+                <p>Bridging heavy cloud technology and simple human connection. Unifying technical complexity with local business simplicity into one seamless digital ecosystem.</p>
+            </div>
+        </div>
+
         <header class="brand-header">
             <h1>Reebow TECH</h1>
             <p>Unified Digital Infrastructure & Intelligent Automation Hub</p>
+            <div class="nav-links" style="margin-top: 15px;">
+                <a href="index.html" class="nav-btn active">Home / Hub</a>
+                <a href="client-dashboard.html" class="nav-btn">Control Tower</a>
+                <a href="visitor-page.html" class="nav-btn">Client Widget Preview</a>
+            </div>
         </header>
 
-        <aside class="left-column">
-            <!-- Feature 1: RunPod / Kill-Switch Control Panel -->
-            <div class="module">
-                <h2>Infrastructure Kill-Switch</h2>
-                <p>Manage live stream runtime states to optimize server GPU costs.</p>
-                <div class="toggle-container">
-                    <span id="statusText" style="font-weight: 600; font-size: 0.8em; color: #f3f4f6;">Loop Mode ($0)</span>
-                    <label class="switch">
-                        <input type="checkbox" id="killSwitch" onchange="toggleSystemState()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="module">
-                <h2>Platform Ecosystem</h2>
-                <ul class="stats-list">
-                    <li><strong>AI Streamer Pro:</strong> High-performance interaction suite.</li>
-                    <li><strong>Reebow Connect:</strong> Centralized client control tower.</li>
-                    <li><strong>Marketing Suite:</strong> Automated local campaign growth.</li>
-                </ul>
-            </div>
-            
-            <div class="module">
-                <h2>Verified Performance</h2>
-                <ul class="stats-list">
-                    <li><span class="stat-highlight">98%</span> Faster client response time</li>
-                    <li><span class="stat-highlight">24/7</span> Automated engagement availability</li>
-                    <li><span class="stat-highlight">3.5x</span> Boost in local user retention</li>
-                </ul>
-            </div>
-        </aside>
-
-        <main class="center-column">
+        <main class="center-column" style="grid-column: 1 / -1;">
             <div class="module logo-center">
                 <div class="logo-visual">R T</div>
                 <p class="mission-statement">"Bridging Seamless Human Interaction & Intelligent Automation"</p>
-                <p>Welcome to your command center. Test real-time custom AI behaviors below.</p>
+                <p>Welcome to the core platform architecture. Explore our utility magnet tools and infrastructure tiers below.</p>
             </div>
 
-            <div class="module">
-                <h2>Reebow Live AI Studio</h2>
-                <div class="ai-config-group">
-                    <label for="aiPersona">Custom AI Behavior / Persona Instruction:</label>
-                    <input type="text" id="aiPersona" value="You are a very romantic, sweet person." placeholder="e.g. Speak like an elite tech CEO or romantic partner">
+            <!-- Utility Magnet Suite -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                <div class="module">
+                    <h2>⚡ Social Hook Generator</h2>
+                    <input type="text" id="hookTopic" class="utility-input" placeholder="Enter topic (e.g., AI Growth)">
+                    <button class="utility-btn" onclick="generateHook()">Generate Hooks</button>
+                    <div class="utility-output" id="hookOutput">Hooks will appear here...</div>
                 </div>
-                <div class="chat-box" id="chatBox">
-                    <div class="chat-msg ai">Reeboy AI Online. Type a message below to chat live!</div>
-                </div>
-                <div class="chat-input-area">
-                    <input type="text" id="userInput" placeholder="Type your message..." onkeypress="if(event.key === 'Enter') sendLiveMessage()">
-                    <button onclick="sendLiveMessage()">Send</button>
-                </div>
-            </div>
 
-            <!-- Feature 2: Quick Social Hook & Caption Generator Utility -->
-            <div class="module">
-                <h2>⚡ Social Hook & Caption Generator</h2>
-                <input type="text" id="hookTopic" class="utility-input" placeholder="Enter topic or niche (e.g., AI Automation)">
-                <button class="utility-btn" onclick="generateHook()">Generate Hooks</button>
-                <div class="utility-output" id="hookOutput">Your generated hooks will appear here...</div>
-            </div>
+                <div class="module">
+                    <h2>🤖 Prompt Optimizer</h2>
+                    <input type="text" id="rawPrompt" class="utility-input" placeholder="Enter simple idea">
+                    <button class="utility-btn" onclick="optimizePrompt()">Optimize Prompt</button>
+                    <div class="utility-output" id="promptOutput">Optimized prompt here...</div>
+                </div>
 
-            <!-- Feature 3: AI Prompt Optimizer Utility -->
-            <div class="module">
-                <h2>🤖 Prompt Optimizer</h2>
-                <input type="text" id="rawPrompt" class="utility-input" placeholder="Enter simple idea (e.g., build an AI app)">
-                <button class="utility-btn" onclick="optimizePrompt()">Optimize Prompt</button>
-                <div class="utility-output" id="promptOutput">Optimized prompt will appear here...</div>
+                <div class="module">
+                    <h2>🎯 Vibe & Tagline Maker</h2>
+                    <input type="text" id="vibeKeyword" class="utility-input" placeholder="Enter keyword">
+                    <button class="utility-btn" onclick="generateVibe()">Generate Tagline</button>
+                    <div class="utility-output" id="vibeOutput">Taglines here...</div>
+                </div>
             </div>
         </main>
-
-        <aside class="right-column">
-            <!-- Lead Form upgraded with direct WhatsApp prefilled routing link builder -->
-            <div class="module lead-form">
-                <h2>Get AI Greeter Access</h2>
-                <p>Scale your local operations with automated WhatsApp lead routing.</p>
-                <form onsubmit="handleLeadSubmit(event)">
-                    <input type="text" id="leadBusiness" placeholder="Your Business Name" required>
-                    <input type="tel" id="leadPhone" placeholder="WhatsApp Number (e.g., 2348012345678)" required>
-                    <button type="submit">Open WhatsApp Lead Link</button>
-                </form>
-            </div>
-
-            <!-- Feature 4: Vibe & Tagline Maker Utility -->
-            <div class="module">
-                <h2>🎯 Vibe & Tagline Maker</h2>
-                <input type="text" id="vibeKeyword" class="utility-input" placeholder="Enter keyword (e.g., tech, code)">
-                <button class="utility-btn" onclick="generateVibe()">Generate Tagline</button>
-                <div class="utility-output" id="vibeOutput">Taglines will appear here...</div>
-            </div>
-
-            <div class="module">
-                <h2>Infrastructure Hub</h2>
-                <p>Reliable automation features built for scale.</p>
-                <div class="infra-grid">
-                    <div class="infra-item">Smart Router</div>
-                    <div class="infra-item">Zero Downtime</div>
-                    <div class="infra-item">Secure Checkout</div>
-                    <div class="infra-item">High-Speed Cloud</div>
-                </div>
-            </div>
-        </aside>
 
         <footer>
             <p>&copy; 2026 Reebow TECH. All Rights Reserved. Built for Global Scale.</p>
         </footer>
     </div>
-
-    <script src="script.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
