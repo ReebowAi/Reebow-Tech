@@ -1,0 +1,429 @@
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<meta name="description" content="Reebow TECH — Telegram-style real-time messaging & video call platform. Multi-tenant, white-label ready. Live chat, video injection, geo detection, offline resilience. Deploy in minutes.">
+<meta name="keywords" content="realtime messaging, video call, customer support, socket.io, multi-tenant saas, white label, telegram clone, live chat widget">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Reebow TECH — Real-Time Messaging & Video Call Platform">
+<meta property="og:description" content="Telegram-style admin control tower + visitor chat. Video injection, geo detection, offline queue. Deploy free, scale infinitely.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:url" content="https://reebow.tech">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Reebow TECH — Real-Time Messaging & Video Call Platform">
+<meta name="twitter:description" content="Telegram-style admin control tower + visitor chat. Video injection, geo detection, offline queue.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="style.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="mobile-fix.css">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="mask-icon" href="favicon.svg" color="#3b82f6">
+<title>Reebow TECH — Real-Time Messaging & Video Call Platform</title>
+
+<!-- JSON-LD Structured Data for SEO -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Reebow TECH Platform",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Cloud",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "availability": "https://schema.org/InStock" },
+  "description": "Telegram-style real-time messaging & video call platform. Multi-tenant, white-label ready. Live chat, video injection, geo detection, offline resilience.",
+  "featureList": ["Real-time chat", "Video call injection", "Geo detection", "Multi-language", "Offline message queue", "Admin control tower", "PWA support", "White-label ready"],
+  "author": { "@type": "Organization", "name": "Reebow TECH", "url": "https://reebow.tech" }
+}
+</script>
+</head>
+<body>
+<!-- PWA Install Banner (shown before prompt) -->
+<div id="pwa-banner" class="pwa-banner" hidden>
+  <div class="pwa-banner-content">
+    <svg class="pwa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+    <div class="pwa-text">
+      <strong>Install Reebow Messenger</strong>
+      <span>Add to home screen for native app experience</span>
+    </div>
+  </div>
+  <button id="pwa-dismiss" class="btn-ghost" aria-label="Dismiss">✕</button>
+  <button id="pwa-install" class="btn-primary">Install</button>
+</div>
+
+<!-- Navigation -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-container">
+    <a href="/" class="nav-logo" aria-label="Reebow TECH Home">
+      <svg class="logo-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect x="2" y="2" width="28" height="28" rx="6" fill="url(#logoGrad)"/>
+        <path d="M8 16h16M16 8v16" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <defs><linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs>
+      </svg>
+      <span class="logo-text">Reebow TECH</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#demo" class="nav-link">Live Demo</a>
+      <a href="#pricing" class="nav-link">Pricing</a>
+      <a href="#docs" class="nav-link">Docs</a>
+      <a href="admin.html" class="btn-primary nav-cta" style="padding: 0.6rem 1.2rem; font-size: 0.875rem;">Control Tower</a>
+    </div>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle menu">
+      <span class="hamburger"></span>
+    </button>
+  </div>
+  <div id="nav-menu" class="nav-dropdown" hidden>
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#demo" class="nav-link">Live Demo</a>
+    <a href="#pricing" class="nav-link">Pricing</a>
+    <a href="#docs" class="nav-link">Documentation</a>
+    <a href="admin.html" class="btn-primary" style="width: 100%; text-align: center;">Control Tower</a>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<header class="hero" role="banner">
+  <div class="hero-bg">
+    <div class="grid-pattern"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="hero-container">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        <span>Version 2.0 — Multi-Tenant & White-Label Ready</span>
+      </div>
+      <h1 class="hero-title">
+        Telegram-Style <br>
+        <span class="gradient-text">Real-Time Messaging</span> <br>
+        <span class="gradient-text" style="background: linear-gradient(135deg, #22d3ee, #f472b6);">Video Call Platform</span>
+      </h1>
+      <p class="hero-subtitle">
+        Complete infrastructure for live customer engagement. Admin control tower, visitor chat, video injection, geo detection, offline queue — all in one deployable package. Zero monthly fees on your infrastructure.
+      </p>
+      <div class="hero-actions">
+        <a href="visitor.html?demo=true" class="btn-primary btn-lg" id="hero-demo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Try Live Demo
+        </a>
+        <a href="#deploy" class="btn-secondary btn-lg">Deploy in 5 Minutes</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-value">0</span><span class="stat-label">Monthly Server Cost</span></div>
+        <div class="stat"><span class="stat-value">∞</span><span class="stat-label">Concurrent Visitors</span></div>
+        <div class="stat"><span class="stat-value">2min</span><span class="stat-label">Deploy Time</span></div>
+        <div class="stat"><span class="stat-value">100%</span><span class="stat-label">Your Data</span></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="device-frame">
+        <div class="device-header">
+          <div class="device-dots"><span></span><span></span><span></span></div>
+        </div>
+        <div class="device-screen" id="hero-preview">
+          <!-- Live preview loads via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-scroll" aria-label="Scroll down">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+  </div>
+</header>
+
+<!-- Trust Bar -->
+<div class="trust-bar" aria-label="Trusted by">
+  <div class="trust-container">
+    <span class="trust-label">Deployed on</span>
+    <div class="trust-logos">
+      <span class="trust-logo" title="Render"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.5L9.5 8.5 12 10 14.5 8.5 12 6.5z"/></svg></span>
+      <span class="trust-logo" title="Railway"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.36z"/></svg></span>
+      <span class="trust-logo" title="MongoDB Atlas"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l7.82 3.91v8.82L12 21.82 4.18 17.91V9.09L12 4.18zM12 6.5l5.5 2.75v7.5l-5.5 2.75-5.5-2.75v-7.5L12 6.5z"/></svg></span>
+      <span class="trust-logo" title="Socket.io"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3z"/></svg></span>
+      <span class="trust-logo" title="Node.js"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l7.82 3.91v8.82L12 21.82 4.18 17.91V9.09L12 4.18z"/></svg></span>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<section id="features" class="section features" aria-labelledby="features-title">
+  <div class="container">
+    <header class="section-header">
+      <h2 id="features-title" class="section-title">Built for <span class="gradient-text">Production Scale</span></h2>
+      <p class="section-subtitle">Every feature engineered for real-world reliability — not just demo happy paths.</p>
+    </header>
+    <div class="features-grid">
+      <article class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>
+        <h3>Telegram-Style Chat</h3>
+        <p>Tabs: Chats, Contacts, Calls, Settings. Bottom nav on mobile. Swipe gestures. Message bubbles with tails. Image paste/drop. Read receipts. Typing indicator.</p>
+        <ul class="feature-details">
+          <li>Real-time via Socket.io</li>
+          <li>Offline queue + auto-retry</li>
+          <li>Image compression (client-side)</li>
+          <li>Markdown + link previews</li>
+        </ul>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg></div>
+        <h3>Admin Control Tower</h3>
+        <p>Single-pane dashboard: live visitor list with online dots, geo flags, search, full history, send text/images, initiate calls, inject video clips, delete conversations.</p>
+        <ul class="feature-details">
+          <li>Password-protected (configurable)</li>
+          <li>Multi-visitor concurrent views</li>
+          <li>Call logs with duration</li>
+          <li>Mobile-responsive sidebar</li>
+        </ul>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 17a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><rect x="9" y="12" width="6" height="6" rx="1"></rect></svg></div>
+        <h3>Video Call Loop (Clip Injection)</h3>
+        <p>Pre-record persona clips (Annie, Craig, custom) → admin clicks → visitor sees lip-synced video instantly. Zero GPU. Zero WebRTC complexity. Works on $0 hosting.</p>
+        <ul class="feature-details">
+          <li>MP4 clips, baked audio = perfect sync</li>
+          <li>Persona switcher (multi-character)</li>
+          <li>Looping "listening" states</li>
+          <li>Realism filters (grain, blur, warmth)</li>
+        </ul>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>
+        <h3>Geo Detection & Localization</h3>
+        <p>IP → country, city, flag emoji, timezone, ISP. Auto language switch (EN/FR/ES/AR/PT). Admin sees visitor location instantly. No external API keys needed (ip-api.com free).</p>
+        <ul class="feature-details">
+          <li>45 req/min free tier</li>
+          <li>Cached per session</li>
+          <li>RTL language support</li>
+          <li>Custom admin name per visitor</li>
+        </ul>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+        <h3>Offline Resilience</h3>
+        <p>Service Worker caches app shell + clips. Messages queue locally when offline → auto-flush on reconnect. Heartbeat detects disconnection. Visitors never lose input.</p>
+        <ul class="feature-details">
+          <li>Workbox-style precaching</li>
+          <li>Background sync (when supported)</li>
+          <li>Connection state UI</li>
+          <li>Auto-reconnect with backoff</li>
+        </ul>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg></div>
+        <h3>PWA Installable</h3>
+        <p>Web App Manifest + Service Worker = "Add to Home Screen" on iOS/Android/Desktop. Full-screen standalone mode. Push notification ready (VAPID keys).</p>
+        <ul class="feature-details">
+          <li>Custom install banner</li>
+          <li>Shortcut icons (Chat, Calls, Settings)</li>
+          <li>Offline-first caching strategy</li>
+          <li>Badge notifications</li>
+        </ul>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M8 11l2 2 4-4"></path></svg></div>
+        <h3>Security Hardened</h3>
+        <p>Helmet CSP, rate limiting (global + login), secure httpOnly cookies, MongoDB Atlas IP whitelist, env-only secrets, session TTL, CORS locked to your domain.</p>
+        <ul class="feature-details">
+          <li>No hardcoded credentials</li>
+          <li>Brute-force protection</li>
+          <li>Input validation + sanitization</li>
+          <li>Audit logging</li>
+        </ul>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg></div>
+        <h3>Multi-Tenant SaaS Skeleton</h3>
+        <p>Tenant isolation via <code>tenantId</code>. Payment webhook → auto-provision tenant + unique admin password + return branded URLs. Stripe / NOWPayments / Paystack ready.</p>
+        <ul class="feature-details">
+          <li>Isolated visitor lists per tenant</li>
+          <li>Custom admin name per tenant</li>
+          <li>Webhook signature verification</li>
+          <li>Clone & deploy for clients</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- Live Demo Section -->
+<section id="demo" class="section demo" aria-labelledby="demo-title">
+  <div class="container">
+    <header class="section-header">
+      <h2 id="demo-title" class="section-title">Try It Now — <span class="gradient-text">No Signup Required</span></h2>
+      <p class="section-subtitle">Open two tabs. One admin, one visitor. Send messages. Start a call. Inject a clip. Feel the latency.</p>
+    </header>
+    <div class="demo-grid">
+      <div class="demo-card admin">
+        <div class="demo-card-header"><span class="badge admin">Admin View</span></div>
+        <div class="demo-preview">
+          <iframe src="admin.html?demo=true&embed=true" title="Admin Control Tower Demo" loading="lazy"></iframe>
+        </div>
+        <div class="demo-actions">
+          <a href="admin.html?demo=true" class="btn-primary" target="_blank">Open Full Admin →</a>
+        </div>
+      </div>
+      <div class="demo-card visitor">
+        <div class="demo-card-header"><span class="badge visitor">Visitor View</span></div>
+        <div class="demo-preview">
+          <iframe src="visitor.html?demo=true&embed=true" title="Visitor Chat Demo" loading="lazy"></iframe>
+        </div>
+        <div class="demo-actions">
+          <a href="visitor.html?demo=true" class="btn-primary" target="_blank">Open Full Visitor →</a>
+        </div>
+      </div>
+    </div>
+    <div class="demo-instructions">
+      <h3>How to Test</h3>
+      <ol>
+        <li>Click <strong>Open Full Admin</strong> → enter password <code>Reeb911422@</code></li>
+        <li>Click <strong>Open Full Visitor</strong> → enter any email</li>
+        <li>Type in visitor → see it in admin instantly</li>
+        <li>Admin: click <strong>Live Call</strong> → visitor sees video</li>
+        <li>Admin: click <strong>Inject Clip</strong> → switch persona</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- Deploy Section -->
+<section id="deploy" class="section deploy" aria-labelledby="deploy-title">
+  <div class="container">
+    <header class="section-header">
+      <h2 id="deploy-title" class="section-title">Deploy to Production in <span class="gradient-text">5 Minutes</span></h2>
+      <p class="section-subtitle">Zero-config on Render, Railway, or DigitalOcean. Your code, your data, your domain.</p>
+    </header>
+    <div class="deploy-options">
+      <article class="deploy-card">
+        <div class="deploy-icon render"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.5L9.5 8.5 12 10 14.5 8.5 12 6.5z"/></svg></div>
+        <h3>Render (Recommended)</h3>
+        <ul>
+          <li>Free tier: 750 hrs/mo</li>
+          <li>Auto HTTPS + custom domain</li>
+          <li>Auto-deploy from GitHub</li>
+          <li>Redis add-on for scaling</li>
+        </ul>
+        <a href="https://render.com/deploy?repo=https://github.com/your-org/reebow-platform" target="_blank" class="btn-secondary" style="width: 100%;">Deploy to Render</a>
+      </article>
+      <article class="deploy-card">
+        <div class="deploy-icon railway"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.36z"/></svg></div>
+        <h3>Railway</h3>
+        <ul>
+          <li>$5/mo usage-based</li>
+          <li>Native MongoDB plugin</li>
+          <li>One-click env vars</li>
+          <li>CLI for logs</li>
+        </ul>
+        <a href="https://railway.app/template/reebow-platform" target="_blank" class="btn-secondary" style="width: 100%;">Deploy to Railway</a>
+      </article>
+      <article class="deploy-card">
+        <div class="deploy-icon digitalocean"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg></div>
+        <h3>DigitalOcean App Platform</h3>
+        <ul>
+          <li>$5/mo for basic</li>
+          <li>Managed MongoDB available</li>
+          <li>Container registry included</li>
+          <li>Global CDN</li>
+        </ul>
+        <a href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/your-org/reebow-platform" target="_blank" class="btn-secondary" style="width: 100%;">Deploy to DO</a>
+      </article>
+    </div>
+    <details class="deploy-manual">
+      <summary>Manual Deploy Steps (Any Node Host)</summary>
+      <div class="manual-steps">
+        <pre><code># 1. Clone & install
+git clone https://github.com/your-org/reebow-platform.git
+cd reebow-platform && npm ci --production
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your values (MongoDB URI, secrets, domain)
+
+# 3. Build front-end assets (if using build step)
+# npm run build
+
+# 4. Start (production)
+NODE_ENV=production npm start
+
+# 5. Process manager (PM2)
+npm i -g pm2
+pm2 start server.js --name reebow --env production
+pm2 save && pm2 startup</code></pre>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- Pricing Section -->
+<section id="pricing" class="section pricing" aria-labelledby="pricing-title">
+  <div class="container">
+    <header class="section-header">
+      <h2 id="pricing-title" class="section-title">Simple, Transparent <span class="gradient-text">Pricing</span></h2>
+      <p class="section-subtitle">Pay only for what you use. No per-seat fees. No hidden costs. Deploy on your own infra = $0 platform fee.</p>
+    </header>
+    <div class="pricing-toggle">
+      <span>Monthly</span>
+      <label class="toggle-switch"><input type="checkbox" id="billing-toggle"><span class="slider"></span></label>
+      <span>Yearly <span class="badge save">Save 20%</span></span>
+    </div>
+    <div class="pricing-grid">
+      <article class="pricing-card community">
+        <header><h3>Self-Hosted</h3><p>Run on your own infrastructure</p></header>
+        <div class="price"><span class="amount" data-monthly="0" data-yearly="0">$0</span><span class="period">/month</span></div>
+        <ul class="features-list">
+          <li>✓ Full source code access</li>
+          <li>✓ Unlimited visitors & tenants</li>
+          <li>✓ All features included</li>
+          <li>✓ Your MongoDB, your domain</li>
+          <li>✓ Community support (GitHub Issues)</li>
+          <li>✓ MIT license — commercial use OK</li>
+        </ul>
+        <a href="https://github.com/your-org/reebow-platform" class="btn-secondary" style="width: 100%;">Get Source Code</a>
+      </article>
+      <article class="pricing-card managed popular">
+        <div class="popular-badge">Most Popular</div>
+        <header><h3>Managed Cloud</h3><p>We host, you use</p></header>
+        <div class="price"><span class="amount" data-monthly="29" data-yearly="278">$29</span><span class="period">/month</span></div>
+        <ul class="features-list">
+          <li>✓ Fully managed on our infra</li>
+          <li>✓ Custom domain + SSL</li>
+          <li>✓ Daily backups + monitoring</li>
+          <li>✓ 99.9% uptime SLA</li>
+          <li>✓ Priority email support</li>
+          <li>✓ Multi-tenant dashboard</li>
+          <li>✓ White-label option (+$10)</li>
+        </ul>
+        <a href="#contact" class="btn-primary" style="width: 100%;">Start Free Trial</a>
+      </article>
+      <article class="pricing-card enterprise">
+        <header><h3>Enterprise</h3><p>Dedicated + custom</p></header>
+        <div class="price"><span class="amount" data-monthly="199" data-yearly="1910">$199</span><span class="period">/month</span></div>
+        <ul class="features-list">
+          <li>✓ Dedicated VPC + static IP</li>
+          <li>✓ Custom SLA + penetration test</li>
+          <li>✓ SSO (SAML/OIDC) integration</li>
+          <li>✓ Webhook callbacks + APIs</li>
+          <li>✓ Custom feature development</li>
+          <li>✓ 24/7 phone + Slack support</li>
+          <li>✓ On-premise deployment option</li>
+        </ul>
+        <a href="#contact" class="btn-secondary" style="width: 100%;">Contact Sales</a>
+      </article>
+    </div>
+    <p class="pricing-note">Self-hosted = $0 platform cost. You pay only your cloud bill (Render $0–7, MongoDB Atlas free–$9, CDN ~$1). Managed plans include hosting.</p>
+  </div>
+</section>
+
+<!-- Docs Section -->
+<section id="docs" class="section docs" aria-labelledby="docs-title">
+  <div class="container">
+    <header class="section-header">
+      <h2 id="docs-title" class="section-title">Developer <span class="gradient-text">Documentation</span></h2>
+      <p class="section-subtitle">Complete guides, API reference, and architecture docs.</p>
