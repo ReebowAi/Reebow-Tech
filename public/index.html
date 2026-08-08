@@ -16,13 +16,13 @@
 <meta name="twitter:description" content="Telegram-style admin control tower + visitor chat. Video injection, geo detection, offline queue.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="style.css">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="mobile-fix.css">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="mask-icon" href="favicon.svg" color="#3b82f6">
+<link rel="preload" as="style" href="/style.css">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/mobile-fix.css">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="mask-icon" href="/favicon.svg" color="#3b82f6">
 <title>Reebow TECH — Real-Time Messaging & Video Call Platform</title>
 
 <!-- JSON-LD Structured Data for SEO -->
@@ -70,7 +70,7 @@
       <a href="#demo" class="nav-link">Live Demo</a>
       <a href="#pricing" class="nav-link">Pricing</a>
       <a href="#docs" class="nav-link">Docs</a>
-      <a href="admin.html" class="btn-primary nav-cta" style="padding: 0.6rem 1.2rem; font-size: 0.875rem;">Control Tower</a>
+      <a href="/admin.html" class="btn-primary nav-cta" style="padding: 0.6rem 1.2rem; font-size: 0.875rem;">Control Tower</a>
     </div>
     <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle menu">
       <span class="hamburger"></span>
@@ -81,7 +81,7 @@
     <a href="#demo" class="nav-link">Live Demo</a>
     <a href="#pricing" class="nav-link">Pricing</a>
     <a href="#docs" class="nav-link">Documentation</a>
-    <a href="admin.html" class="btn-primary" style="width: 100%; text-align: center;">Control Tower</a>
+    <a href="/admin.html" class="btn-primary" style="width: 100%; text-align: center;">Control Tower</a>
   </div>
 </nav>
 
@@ -108,7 +108,7 @@
         Complete infrastructure for live customer engagement. Admin control tower, visitor chat, video injection, geo detection, offline queue — all in one deployable package. Zero monthly fees on your infrastructure.
       </p>
       <div class="hero-actions">
-        <a href="visitor.html?demo=true" class="btn-primary btn-lg" id="hero-demo">
+        <a href="/visitor.html?demo=true" class="btn-primary btn-lg" id="hero-demo">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           Try Live Demo
         </a>
@@ -262,19 +262,19 @@
       <div class="demo-card admin">
         <div class="demo-card-header"><span class="badge admin">Admin View</span></div>
         <div class="demo-preview">
-          <iframe src="admin.html?demo=true&embed=true" title="Admin Control Tower Demo" loading="lazy"></iframe>
+          <iframe src="/admin.html?demo=true&embed=true" title="Admin Control Tower Demo" loading="lazy"></iframe>
         </div>
         <div class="demo-actions">
-          <a href="admin.html?demo=true" class="btn-primary" target="_blank">Open Full Admin →</a>
+          <a href="/admin.html?demo=true" class="btn-primary" target="_blank">Open Full Admin →</a>
         </div>
       </div>
       <div class="demo-card visitor">
         <div class="demo-card-header"><span class="badge visitor">Visitor View</span></div>
         <div class="demo-preview">
-          <iframe src="visitor.html?demo=true&embed=true" title="Visitor Chat Demo" loading="lazy"></iframe>
+          <iframe src="/visitor.html?demo=true&embed=true" title="Visitor Chat Demo" loading="lazy"></iframe>
         </div>
         <div class="demo-actions">
-          <a href="visitor.html?demo=true" class="btn-primary" target="_blank">Open Full Visitor →</a>
+          <a href="/visitor.html?demo=true" class="btn-primary" target="_blank">Open Full Visitor →</a>
         </div>
       </div>
     </div>
@@ -428,32 +428,32 @@ pm2 save && pm2 startup</code></pre>
     </header>
     <div class="docs-grid" style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-top: 2rem;">
       
-      <a href="docs/ARCHITECTURE.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
+      <a href="/docs/ARCHITECTURE.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
         <h3 style="color: #3b82f6; margin-bottom: 0.5rem;">Architecture Overview</h3>
         <p style="font-size: 0.875rem; color: #9ca3af;">System design, data flow, socket events, database schema, scaling strategy.</p>
       </a>
 
-      <a href="docs/API.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
+      <a href="/docs/API.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
         <h3 style="color: #3b82f6; margin-bottom: 0.5rem;">REST API Reference</h3>
         <p style="font-size: 0.875rem; color: #9ca3af;">All endpoints: visitor, admin, webhooks, clips. Request/response schemas, error codes.</p>
       </a>
 
-      <a href="docs/SOCKET_EVENTS.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
+      <a href="/docs/SOCKET_EVENTS.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
         <h3 style="color: #3b82f6; margin-bottom: 0.5rem;">Socket.io Events</h3>
         <p style="font-size: 0.875rem; color: #9ca3af;">Complete event catalog: admin-join, visitor-register, send-message, inject-clip, call signaling, typing, heartbeat.</p>
       </a>
 
-      <a href="docs/DEPLOYMENT.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
+      <a href="/docs/DEPLOYMENT.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
         <h3 style="color: #3b82f6; margin-bottom: 0.5rem;">Deployment Guide</h3>
         <p style="font-size: 0.875rem; color: #9ca3af;">Render, Railway, DigitalOcean, VPS, Docker. Environment variables, SSL, domains, PM2, monitoring.</p>
       </a>
 
-      <a href="docs/CLIENT_HANDOVER.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
+      <a href="/docs/CLIENT_HANDOVER.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
         <h3 style="color: #3b82f6; margin-bottom: 0.5rem;">Client Handover Guide</h3>
         <p style="font-size: 0.875rem; color: #9ca3af;">What to deliver to buyers: repo access, .env.example, credentials, 15-min setup video script, support terms.</p>
       </a>
 
-      <a href="docs/VIDEO_CLIPS.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
+      <a href="/docs/VIDEO_CLIPS.md" class="doc-card" style="padding: 1.5rem; background: var(--bg-card, #111827); border: 1px solid #1f2937; border-radius: 8px; text-decoration: none; color: inherit;">
         <h3 style="color: #3b82f6; margin-bottom: 0.5rem;">Video Clip Production</h3>
         <p style="font-size: 0.875rem; color: #9ca3af;">Recording specs, naming convention, manifest format, realism filter tuning, tools (D-ID, HeyGen, LivePortrait).</p>
       </a>
@@ -495,8 +495,8 @@ pm2 save && pm2 startup</code></pre>
         <li><a href="#demo" style="color: #9ca3af; text-decoration: none;">Live Demo</a></li>
         <li><a href="#pricing" style="color: #9ca3af; text-decoration: none;">Pricing</a></li>
         <li><a href="#docs" style="color: #9ca3af; text-decoration: none;">Documentation</a></li>
-        <li><a href="admin.html" style="color: #9ca3af; text-decoration: none;">Control Tower</a></li>
-        <li><a href="visitor.html" style="color: #9ca3af; text-decoration: none;">Visitor View</a></li>
+        <li><a href="/admin.html" style="color: #9ca3af; text-decoration: none;">Control Tower</a></li>
+        <li><a href="/visitor.html" style="color: #9ca3af; text-decoration: none;">Visitor View</a></li>
       </ul>
     </div>
 
@@ -584,7 +584,7 @@ pm2 save && pm2 startup</code></pre>
   // 5. Hero Preview - Load visitor.html demo in frame
   const heroPreview = document.getElementById('hero-preview');
   if (heroPreview) {
-    heroPreview.innerHTML = `<iframe src="visitor.html?demo=true&embed=true" style="width:100%; height:100%; border:none; border-radius: 8px;"></iframe>`;
+    heroPreview.innerHTML = `<iframe src="/visitor.html?demo=true&embed=true" style="width:100%; height:100%; border:none; border-radius: 8px;"></iframe>`;
   }
 </script>
 </body>
