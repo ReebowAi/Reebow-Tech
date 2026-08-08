@@ -1,8 +1,8 @@
-// ════════════════════════════════════════════════════════════════════════
-// REEBOW TECH PLATFORM — SERVER.JS
-// Single-file backend: Express + Socket.io + Mongoose + Sessions + Webhooks
-// Run: npm start  |  Dev: npm run dev
-// ════════════════════════════════════════════════════════════════════════
+// =====================================================================
+// REEBOW TECH PLATFORM — COMPLETE SERVER.JS
+// Final Boss Version
+// Secure Multi-Tenant + Unique Password + Real-time + Video + Geo
+// =====================================================================
 
 import 'dotenv/config';
 import express from 'express';
@@ -14,16 +14,17 @@ import MongoStore from 'connect-mongo';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
-import { RateLimiterMemory } from 'rate-limiter-flexible';
 import winston from 'winston';
-import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import axios from 'axios';
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 
-// ────────────────────────────────────────────────────────────────────────
-// PATHS & ENV VALIDATION
-// ────────────────────────────────────────────────────────────────────────
+// -------------------------------------------------------------------
+// PATHS
+// -------------------------------------------------------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = resolve(__dirname);
@@ -31,17 +32,14 @@ const PUBLIC_DIR = join(PROJECT_ROOT, 'public');
 const LOGS_DIR = join(PROJECT_ROOT, 'logs');
 const CLIPS_DIR = join(PUBLIC_DIR, 'clips');
 
-// Ensure critical directories exist
 [LOGS_DIR, CLIPS_DIR].forEach((dir) => {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 });
 
-// Required env vars (fail fast on missing)
-const requiredEnv = [
-  'MONGO_URI',
-  'SESSION_SECRET',
-  'ADMIN_PASSWORD',
-];
+// -------------------------------------------------------------------
+// ENV VALIDATION
+// -------------------------------------------------------------------
+const requiredEnv = ['MONGO_URI', 'SESSION_SECRET', 'SUPER_ADMIN_EMAIL', 'SUPER_ADMIN_PASSWORD'];
 for (const key of requiredEnv) {
   if (!process.env[key]) {
     console.error(`❌ FATAL: Missing required environment variable: ${key}`);
@@ -49,993 +47,568 @@ for (const key of requiredEnv) {
   }
 }
 
-// ────────────────────────────────────────────────────────────────────────
-// LOGGER (Winston — structured JSON for production)
-// ────────────────────────────────────────────────────────────────────────
-const logFormat = process.env.LOG_FORMAT === 'simple'
-  ? winston.format.combine(
-      winston.format.colorize(),
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      winston.format.printf(({ timestamp, level, message, ...meta }) => {
-        const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
-        return `${timestamp} [${level}]: ${message} ${metaStr}`;
-      })
-    )
-  : winston.format.combine(
-      winston.format.timestamp(),
-      winston.format.errors({ stack: true }),
-      winston.format.json()
-    );
-
+// -------------------------------------------------------------------
+// LOGGER
+// -------------------------------------------------------------------
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: logFormat,
-  defaultMeta: { service: 'reebow-platform' },
+  level: 'info',
+  format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
   transports: [
     new winston.transports.Console(),
-    new winston.transports.File({
-      filename: join(LOGS_DIR, 'error.log'),
-      level: 'error',
-      maxsize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    }),
-    new winston.transports.File({
-      filename: join(LOGS_DIR, 'combined.log'),
-      maxsize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    }),
+    new winston.transports.File({ filename: join(LOGS_DIR, 'error.log'), level: 'error' }),
+    new winston.transports.File({ filename: join(LOGS_DIR, 'combined.log') }),
   ],
 });
-
-// Helper for consistent logging
 const log = {
   info: (msg, meta) => logger.info(msg, meta),
-  warn: (msg, meta) => logger.warn(msg, meta),
   error: (msg, meta) => logger.error(msg, meta),
-  debug: (msg, meta) => logger.debug(msg, meta),
-  http: (msg, meta) => logger.http(msg, meta),
 };
 
-// ────────────────────────────────────────────────────────────────────────
-// MONGOOSE CONNECTION & SCHEMAS
-// ────────────────────────────────────────────────────────────────────────
-const mongoUri = process.env.MONGO_URI;
-const dbName = process.env.MONGO_DB_NAME || 'reebow-platform';
-
+// -------------------------------------------------------------------
+// DATABASE
+// -------------------------------------------------------------------
 mongoose.set('strictQuery', true);
 
-const connectMongo = async () => {
-  try {
-    await mongoose.connect(mongoUri, {
-      dbName,
-      maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE) || 10,
-      serverSelectionTimeoutMS: parseInt(process.env.MONGO_SERVER_SELECTION_MS) || 5000,
-      socketTimeoutMS: parseInt(process.env.MONGO_SOCKET_TIMEOUT_MS) || 45000,
-      family: 4, // IPv4 first
-    });
-    log.info('✅ MongoDB connected', { db: mongoose.connection.name, host: mongoose.connection.host });
-  } catch (err) {
-    log.error('❌ MongoDB connection failed', { error: err.message, stack: err.stack });
-    throw err;
-  }
-};
+async function connectMongo() {
+  await mongoose.connect(process.env.MONGO_URI, {
+    dbName: process.env.MONGO_DB_NAME || 'reebow-platform',
+  });
+  log.info('✅ MongoDB connected');
+}
 
-mongoose.connection.on('disconnected', () => log.warn('⚠️ MongoDB disconnected'));
-mongoose.connection.on('reconnected', () => log.info('✅ MongoDB reconnected'));
-mongoose.connection.on('error', (err) => log.error('❌ MongoDB error', { error: err.message }));
-
-// ────────────────────────────────────────────────────────────────────────
+// -------------------------------------------------------------------
 // MODELS
-// ────────────────────────────────────────────────────────────────────────
+// -------------------------------------------------------------------
 
-// Visitor / Tenant (single-tenant mode: tenantId = 'default')
+// TENANT MODEL
+const tenantSchema = new mongoose.Schema(
+  {
+    tenantId: { type: String, required: true, unique: true, index: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    passwordHash: { type: String, required: true },
+    name: { type: String, default: 'Support Agent' },
+    plan: { type: String, default: 'monthly' },
+    status: { type: String, enum: ['active', 'suspended', 'cancelled'], default: 'active' },
+    lastLoginAt: Date,
+  },
+  { timestamps: true, collection: 'tenants' }
+);
+const Tenant = mongoose.model('Tenant', tenantSchema);
+
+// VISITOR MODEL
 const visitorSchema = new mongoose.Schema(
   {
-    email: { type: String, required: true, index: true },
-    tenantId: { type: String, default: 'default', index: true },
-    country: { type: String, default: 'US' },
-    countryCode: { type: String, default: 'US' },
-    city: { type: String },
-    region: { type: String },
-    timezone: { type: String },
-    isp: { type: String },
-    org: { type: String },
-    isMobile: { type: Boolean, default: false },
-    isProxy: { type: Boolean, default: false },
-    isHosting: { type: Boolean, default: false },
-    status: { type: String, enum: ['PENDING', 'ACTIVE', 'SUSPENDED', 'BANNED'], default: 'PENDING' },
-    sourcePanel: { type: String, default: 'default' },
-    customAdminName: { type: String, default: 'Support Agent' },
-    adminPassword: { type: String }, // For multi-tenant: unique per tenant
-    language: { type: String, default: 'en' },
+    email: { type: String, required: true },
+    tenantId: { type: String, required: true, index: true },
+    country: String,
+    countryCode: String,
+    city: String,
+    region: String,
+    timezone: String,
+    isp: String,
+    isMobile: Boolean,
+    isProxy: Boolean,
+    status: { type: String, enum: ['ACTIVE', 'SUSPENDED', 'BANNED'], default: 'ACTIVE' },
     isOnline: { type: Boolean, default: false },
     lastSeen: { type: Date, default: Date.now },
-    lastGeoUpdate: { type: Date },
     messages: [
       {
-        sender: { type: String, enum: ['visitor', 'admin', 'system'], required: true },
-        content: { type: String, required: true },
-        translation: { type: String },
-        messageType: { type: String, enum: ['text', 'image', 'video', 'file', 'system'], default: 'text' },
-        mediaUrl: { type: String },
+        sender: { type: String, enum: ['visitor', 'admin', 'system'] },
+        content: String,
+        messageType: { type: String, default: 'text' },
         timestamp: { type: Date, default: Date.now },
         read: { type: Boolean, default: false },
       },
     ],
     callLogs: [
       {
-        type: { type: String, enum: ['incoming', 'outgoing', 'missed', 'rejected'], required: true },
-        status: { type: String, enum: ['connected', 'ended', 'failed', 'timeout'], required: true },
-        duration: { type: Number, default: 0 }, // seconds
-        recordingUrl: { type: String },
-        notes: { type: String },
+        type: { type: String, enum: ['incoming', 'outgoing', 'missed', 'rejected'] },
+        status: { type: String, enum: ['connected', 'ended', 'failed', 'timeout'] },
+        duration: { type: Number, default: 0 },
+        persona: String,
         timestamp: { type: Date, default: Date.now },
       },
     ],
-    settings: {
-      notifications: { type: Boolean, default: true },
-      theme: { type: String, enum: ['dark', 'light', 'auto'], default: 'dark' },
-      language: { type: String, default: 'en' },
-    },
-    metadata: { type: Map, of: String }, // Flexible extra data
   },
-  {
-    timestamps: true,
-    collection: 'visitors',
-  }
+  { timestamps: true, collection: 'visitors' }
 );
-
-// Indexes for performance
 visitorSchema.index({ tenantId: 1, email: 1 }, { unique: true });
-visitorSchema.index({ tenantId: 1, isOnline: 1, lastSeen: -1 });
-visitorSchema.index({ 'messages.timestamp': -1 });
-visitorSchema.index({ 'callLogs.timestamp': -1 });
-
 const Visitor = mongoose.model('Visitor', visitorSchema);
 
-// Admin Session (for multi-tenant admin logins)
-const adminSessionSchema = new mongoose.Schema(
-  {
-    tenantId: { type: String, required: true, index: true },
-    adminEmail: { type: String, required: true },
-    sessionToken: { type: String, required: true, unique: true },
-    expiresAt: { type: Date, required: true },
-    userAgent: { type: String },
-    ip: { type: String },
-  },
-  { timestamps: true, collection: 'admin_sessions' }
-);
-adminSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
-const AdminSession = mongoose.model('AdminSession', adminSessionSchema);
+// -------------------------------------------------------------------
+// HELPERS
+// -------------------------------------------------------------------
+function generateStrongPassword(length = 12) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+  const bytes = crypto.randomBytes(length);
+  let password = '';
+  for (let i = 0; i < length; i++) password += chars[bytes[i] % chars.length];
+  return password;
+}
 
-// ────────────────────────────────────────────────────────────────────────
-// EXPRESS APP & MIDDLEWARE
-// ────────────────────────────────────────────────────────────────────────
-const app = express();
-const httpServer = createServer(app);
-
-// Trust proxy (required for rate limiting & secure cookies behind Render/Railway/Cloudflare)
-if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
-
-// Security headers
-app.use(
-  helmet({
-    contentSecurityPolicy:
-      process.env.HELMET_CSP_ENABLED === 'true'
-        ? {
-            directives: {
-              defaultSrc: ["'self'"],
-              scriptSrc: ["'self'", "'unsafe-inline'"],
-              styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-              fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-              imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-              mediaSrc: ["'self'", 'blob:', 'https:'],
-              connectSrc: ["'self'", 'wss:', 'https:'],
-              frameSrc: ["'none'"],
-              objectSrc: ["'none'"],
-              baseUri: ["'self'"],
-              formAction: ["'self'"],
-            },
-          }
-        : false,
-    crossOriginEmbedderPolicy: false,
-    hsts: process.env.NODE_ENV === 'production',
-  })
-);
-
-// CORS
-const corsOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-  : process.env.NODE_ENV === 'production'
-  ? [] // Empty = no cross-origin allowed
-  : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
-
-app.use(
-  cors({
-    origin: corsOrigins.length ? corsOrigins : false,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    maxAge: 86400,
-  })
-);
-
-// Compression
-app.use(compression({ level: 6, threshold: 1024 }));
-
-// Body parsers
-app.use(express.json({ limit: '1mb', strict: true }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
-// Session store
-const sessionStore = MongoStore.create({
-  mongoUrl: process.env.MONGO_URI,
-  dbName,
-  collectionName: 'sessions',
-  ttl: Math.floor((parseInt(process.env.SESSION_MAX_AGE_MS) || 2592000000) / 1000),
-  autoRemove: 'interval',
-  autoRemoveInterval: 60, // minutes
-  crypto: { secret: process.env.SESSION_SECRET },
-});
-
-
-const sessionMiddleware = session({
-  name: process.env.SESSION_NAME || 'reebow.sid',
-  secret: process.env.SESSION_SECRET,
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false,
-  rolling: true,
-  cookie: {
-    secure: process.env.SESSION_SECURE_COOKIES === 'true',
-    httpOnly: true,
-    sameSite: process.env.SESSION_SAME_SITE || 'lax',
-    maxAge: parseInt(process.env.SESSION_MAX_AGE_MS) || 2592000000,
-    domain:
-      process.env.NODE_ENV === 'production' ? new URL(process.env.APP_URL).hostname : undefined,
-  },
-});
-
-app.use(sessionMiddleware);
-
-// Request logging
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    if (process.env.NODE_ENV !== 'production' || duration > 1000 || res.statusCode >= 400) {
-      log.http(`${req.method} ${req.originalUrl}`, {
-        status: res.statusCode,
-        duration: `${duration}ms`,
-        ip: req.ip,
-        ua: req.get('user-agent')?.substring(0, 100),
-      });
-    }
-  });
-  next();
-});
-
-// ────────────────────────────────────────────────────────────────────────
-// RATE LIMITERS
-// ────────────────────────────────────────────────────────────────────────
-const globalLimiter = new RateLimiterMemory({
-  points: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-  duration: parseInt(process.env.RATE_LIMIT_WINDOW_MS) / 1000 || 900, // seconds
-});
-
-const loginLimiter = new RateLimiterMemory({
-  points: parseInt(process.env.LOGIN_RATE_LIMIT_MAX) || 5,
-  duration: parseInt(process.env.LOGIN_RATE_LIMIT_WINDOW_MS) / 1000 || 900,
-});
-
-const rateLimitMiddleware = (limiter, keyPrefix = 'global') => async (req, res, next) => {
-  if (process.env.DEV_DISABLE_RATE_LIMIT === 'true') return next();
-  try {
-    const key = `${keyPrefix}:${req.ip}`;
-    await limiter.consume(key);
-    next();
-  } catch (rej) {
-    const secs = Math.round(rej.msBeforeNext / 1000) || 1;
-    res.set('Retry-After', String(secs));
-    log.warn('Rate limit exceeded', { ip: req.ip, path: req.path, retryAfter: secs });
-    return res.status(429).json({
-      success: false,
-      error: 'Too many requests',
-      retryAfter: secs,
-    });
-  }
-};
-
-app.use(rateLimitMiddleware(globalLimiter, 'global'));
-
-// ────────────────────────────────────────────────────────────────────────
-// STATIC FILES & SPA FALLBACK
-// ────────────────────────────────────────────────────────────────────────
-app.use(express.static(PUBLIC_DIR, {
-  maxAge: process.env.NODE_ENV === 'production' ? '1y' : '0',
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) res.set('Cache-Control', 'no-cache, must-revalidate');
-    if (path.endsWith('.js') || path.endsWith('.css')) res.set('Cache-Control', 'public, max-age=31536000, immutable');
-  },
-}));
-
-// ────────────────────────────────────────────────────────────────────────
-// UTILITY FUNCTIONS
-// ────────────────────────────────────────────────────────────────────────
-
-async function getOrCreateVisitor(email, tenantId = 'default', extra = {}) {
+async function createTenant(email, plan = 'monthly', name = 'Support Agent') {
   const normalizedEmail = email.toLowerCase().trim();
-  let visitor = await Visitor.findOne({ tenantId, email: normalizedEmail });
-  if (!visitor) {
-    visitor = await Visitor.create({ tenantId, email: normalizedEmail, ...extra });
-    log.info('👤 New visitor created', { tenantId, email: normalizedEmail });
-  }
-  return visitor;
-}
+  const existing = await Tenant.findOne({ email: normalizedEmail });
+  if (existing) throw new Error('Tenant already exists');
 
-async function updateVisitorOnlineStatus(email, tenantId, isOnline) {
-  await Visitor.updateOne(
-    { tenantId, email: email.toLowerCase().trim() },
-    { $set: { isOnline, lastSeen: new Date() } }
-  );
-}
+  const tenantId = 't_' + crypto.randomBytes(6).toString('hex');
+  const plainPassword = generateStrongPassword(12);
+  const passwordHash = await bcrypt.hash(plainPassword, 12);
 
-function buildVisitorPayload(visitor) {
+  const tenant = await Tenant.create({
+    tenantId,
+    email: normalizedEmail,
+    passwordHash,
+    name,
+    plan,
+  });
+
   return {
-    id: visitor._id,
-    email: visitor.email,
-    tenantId: visitor.tenantId,
-    country: visitor.country,
-    countryCode: visitor.countryCode,
-    city: visitor.city,
-    region: visitor.region,
-    timezone: visitor.timezone,
-    isp: visitor.isp,
-    org: visitor.org,
-    isMobile: visitor.isMobile,
-    isProxy: visitor.isProxy,
-    isHosting: visitor.isHosting,
-    status: visitor.status,
-    sourcePanel: visitor.sourcePanel,
-    customAdminName: visitor.customAdminName,
-    language: visitor.language,
-    isOnline: visitor.isOnline,
-    lastSeen: visitor.lastSeen,
-    messages: visitor.messages.slice(-100), // Last 100 messages
-    callLogs: visitor.callLogs.slice(-20),
-    settings: visitor.settings,
+    tenant,
+    plainPassword,
+    adminUrl: `${process.env.APP_URL || ''}/admin.html?tenant=${tenantId}`,
+    visitorUrl: `${process.env.APP_URL || ''}/visitor.html?tenant=${tenantId}`,
   };
 }
 
-// Geo lookup (ip-api.com free tier)
-async function fetchGeo(ip) {
-  if (process.env.DEV_MOCK_GEO === 'true') {
-    return {
-      country: process.env.DEV_MOCK_GEO_COUNTRY || 'United States',
-      countryCode: 'US',
-      city: process.env.DEV_MOCK_GEO_CITY || 'San Francisco',
-      region: 'CA',
-      timezone: 'America/Los_Angeles',
-      isp: 'Mock ISP',
-      org: 'Mock Org',
-      as: 'AS12345 Mock',
-      mobile: false,
-      proxy: false,
-      hosting: false,
-      query: ip,
-    };
-  }
+async function detectGeo(ip) {
   try {
-    const { default: fetch } = await import('node-fetch');
-    const fields = process.env.IP_API_FIELDS || 'country,countryCode,city,region,timezone,isp,org,as,mobile,proxy,hosting,query';
-    const url = `${process.env.IP_API_URL || 'http://ip-api.com/json/'}${ip}?fields=${fields}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), parseInt(process.env.IP_API_TIMEOUT_MS) || 3000);
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeout);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    const res = await axios.get(`https://ipapi.co/${ip}/json/`, { timeout: 4000 });
+    return {
+      country: res.data.country_name || 'Unknown',
+      countryCode: res.data.country_code || 'XX',
+      city: res.data.city || 'Unknown',
+      region: res.data.region || '',
+      timezone: res.data.timezone || '',
+      isp: res.data.org || '',
+      isProxy: res.data.proxy || false,
+    };
   } catch (err) {
-    log.warn('Geo lookup failed', { ip, error: err.message });
-    return { countryCode: 'XX', country: 'Unknown' };
+    return { country: 'Unknown', countryCode: 'XX', city: 'Unknown', region: '', timezone: '', isp: '', isProxy: false };
   }
 }
 
-// ────────────────────────────────────────────────────────────────────────
-// API ROUTES
-// ────────────────────────────────────────────────────────────────────────
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    version: process.env.npm_package_version || '2.0.0',
-  });
+// -------------------------------------------------------------------
+// EXPRESS + SOCKET.IO
+// -------------------------------------------------------------------
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: { origin: true, credentials: true },
 });
 
-// API version
-app.get('/api/version', (req, res) => {
-  res.json({ version: process.env.npm_package_version || '2.0.0', name: process.env.APP_NAME });
-});
+if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
 
-// ── Visitor Registration ──
-app.post('/api/visitor/register', rateLimitMiddleware(new RateLimiterMemory({ points: 10, duration: 60 }), 'register'), async (req, res) => {
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({ origin: true, credentials: true }));
+app.use(compression());
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(PUBLIC_DIR));
+
+app.use(
+  session({
+    name: 'reebow.sid',
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    },
+  })
+);
+
+// -------------------------------------------------------------------
+// AUTH ROUTES
+// -------------------------------------------------------------------
+app.post('/api/admin/login', async (req, res) => {
   try {
-    const { email, tenantId = 'default', language, sourcePanel } = req.body;
-    if (!email || !email.includes('@')) {
-      return res.status(400).json({ success: false, error: 'Valid email required' });
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email and password required' });
     }
+
     const normalizedEmail = email.toLowerCase().trim();
-    const clientIp = req.ip || req.connection.remoteAddress;
-    const geo = await fetchGeo(clientIp);
 
-    const visitor = await getOrCreateVisitor(normalizedEmail, tenantId, {
-      country: geo.country,
-      countryCode: geo.countryCode,
-      city: geo.city,
-      region: geo.region,
-      timezone: geo.timezone,
-      isp: geo.isp,
-      org: geo.org,
-      isMobile: geo.mobile,
-      isProxy: geo.proxy,
-      isHosting: geo.hosting,
-      language: language || process.env.DEFAULT_LANGUAGE || 'en',
-      sourcePanel: sourcePanel || 'direct',
-      status: 'ACTIVE',
-    });
-
-    req.session.visitorEmail = normalizedEmail;
-    req.session.tenantId = tenantId;
-    await updateVisitorOnlineStatus(normalizedEmail, tenantId, true);
-
-    res.json({ success: true, visitor: buildVisitorPayload(visitor) });
-  } catch (err) {
-    log.error('Visitor registration failed', { error: err.message, body: req.body });
-    res.status(500).json({ success: false, error: 'Registration failed' });
-  }
-});
-
-// ── Visitor Heartbeat ──
-app.post('/api/visitor/heartbeat', async (req, res) => {
-  const { email, tenantId = 'default' } = req.body;
-  if (!email) return res.status(400).json({ success: false });
-  await updateVisitorOnlineStatus(email.toLowerCase(), tenantId, true);
-  res.json({ success: true });
-});
-
-// ── Get Visitor Data (Admin) ──
-app.get('/api/admin/visitor/:email', async (req, res) => {
-  try {
-    const { email } = req.params;
-    const { tenantId = 'default' } = req.query;
-    const visitor = await Visitor.findOne({ tenantId, email: email.toLowerCase() });
-    if (!visitor) return res.status(404).json({ success: false, error: 'Visitor not found' });
-    res.json({ success: true, visitor: buildVisitorPayload(visitor) });
-  } catch (err) {
-    log.error('Get visitor failed', { error: err.message });
-    res.status(500).json({ success: false, error: 'Server error' });
-  }
-});
-
-// ── List Visitors (Admin) ──
-app.get('/api/admin/visitors', async (req, res) => {
-  try {
-    const { tenantId = 'default', status, online, search, limit = 50, offset = 0 } = req.query;
-    const query = { tenantId };
-    if (status) query.status = status;
-    if (online === 'true') query.isOnline = true;
-    if (search) {
-      const regex = new RegExp(search.toLowerCase(), 'i');
-      query.$or = [{ email: regex }, { city: regex }, { country: regex }];
-    }
-    const [visitors, total] = await Promise.all([
-      Visitor.find(query)
-        .sort({ isOnline: -1, lastSeen: -1 })
-        .skip(parseInt(offset))
-        .limit(parseInt(limit))
-        .lean(),
-      Visitor.countDocuments(query),
-    ]);
-    res.json({
-      success: true,
-      visitors: visitors.map(buildVisitorPayload),
-      pagination: { total, limit: parseInt(limit), offset: parseInt(offset) },
-    });
-  } catch (err) {
-    log.error('List visitors failed', { error: err.message });
-    res.status(500).json({ success: false, error: 'Server error' });
-  }
-});
-
-// ── Admin Login ──
-app.post('/api/admin/login', rateLimitMiddleware(loginLimiter, 'login'), async (req, res) => {
-  try {
-    const { email, password, tenantId = 'default', remember } = req.body;
-    if (!email || !password) return res.status(400).json({ success: false, error: 'Email and password required' });
-
-    // Single-tenant mode: check against env ADMIN_PASSWORD + ADMIN_EMAIL
-    if (tenantId === 'default') {
-      if (email.toLowerCase() !== process.env.ADMIN_EMAIL.toLowerCase()) {
-        return res.status(401).json({ success: false, error: 'Invalid credentials' });
-      }
-      if (password !== process.env.ADMIN_PASSWORD) {
-        return res.status(401).json({ success: false, error: 'Invalid credentials' });
-      }
-      req.session.admin = { email, tenantId, role: 'super' };
-      req.session.adminExpires = Date.now() + (parseInt(process.env.ADMIN_SESSION_TTL_MS) || 3600000);
-      return res.json({ success: true, role: 'super', tenantId });
+    // Super Admin (from environment only)
+    if (
+      normalizedEmail === process.env.SUPER_ADMIN_EMAIL.toLowerCase() &&
+      password === process.env.SUPER_ADMIN_PASSWORD
+    ) {
+      req.session.admin = { email: normalizedEmail, role: 'super', tenantId: 'super' };
+      return res.json({ success: true, role: 'super', tenantId: 'super' });
     }
 
-    // Multi-tenant mode: check against visitor adminPassword
-    const visitor = await Visitor.findOne({ tenantId, email: email.toLowerCase(), adminPassword: password });
-    if (!visitor) return res.status(401).json({ success: false, error: 'Invalid credentials' });
+    // Tenant Login
+    const tenant = await Tenant.findOne({ email: normalizedEmail, status: 'active' });
+    if (!tenant) return res.status(401).json({ success: false, error: 'Invalid credentials' });
 
-    req.session.admin = { email, tenantId, role: 'tenant' };
-    req.session.adminExpires = Date.now() + (parseInt(process.env.ADMIN_SESSION_TTL_MS) || 3600000);
-    res.json({ success: true, role: 'tenant', tenantId, customAdminName: visitor.customAdminName });
+    const match = await bcrypt.compare(password, tenant.passwordHash);
+    if (!match) return res.status(401).json({ success: false, error: 'Invalid credentials' });
+
+    tenant.lastLoginAt = new Date();
+    await tenant.save();
+
+    req.session.admin = {
+      email: tenant.email,
+      role: 'tenant',
+      tenantId: tenant.tenantId,
+      name: tenant.name,
+    };
+
+    res.json({ success: true, role: 'tenant', tenantId: tenant.tenantId, name: tenant.name });
   } catch (err) {
-    log.error('Admin login failed', { error: err.message });
+    log.error('Login error', { error: err.message });
     res.status(500).json({ success: false, error: 'Login failed' });
   }
 });
 
-// ── Admin Logout ──
-app.post('/api/admin/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) return res.status(500).json({ success: false });
-    res.clearCookie(process.env.SESSION_NAME || 'reebow.sid');
-    res.json({ success: true });
-  });
-});
-
-// ── Admin Session Check ──
 app.get('/api/admin/session', (req, res) => {
-  if (req.session.admin && req.session.adminExpires > Date.now()) {
-    return res.json({ success: true, admin: req.session.admin });
-  }
+  if (req.session.admin) return res.json({ success: true, admin: req.session.admin });
   res.json({ success: false });
 });
 
-// ── Send Message (Admin → Visitor) ──
-app.post('/api/admin/message', async (req, res) => {
+app.post('/api/admin/logout', (req, res) => {
+  req.session.destroy(() => res.json({ success: true }));
+});
+
+// -------------------------------------------------------------------
+// PROVISION TENANT
+// -------------------------------------------------------------------
+app.post('/api/provision-tenant', async (req, res) => {
   try {
-    const { email, content, tenantId = 'default', messageType = 'text', mediaUrl } = req.body;
-    if (!email || !content) return res.status(400).json({ success: false, error: 'Email and content required' });
-    const visitor = await Visitor.findOne({ tenantId, email: email.toLowerCase() });
+    const secret = req.headers['x-provision-secret'];
+    if (secret !== process.env.SESSION_SECRET) {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { email, plan = 'monthly', name } = req.body;
+    if (!email) return res.status(400).json({ success: false, error: 'Email required' });
+
+    const result = await createTenant(email, plan, name);
+
+    res.json({
+      success: true,
+      tenantId: result.tenant.tenantId,
+      email: result.tenant.email,
+      temporaryPassword: result.plainPassword,
+      adminUrl: result.adminUrl,
+      visitorUrl: result.visitorUrl,
+      message: 'Save this password now. It will never be shown again.',
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// -------------------------------------------------------------------
+// VISITOR ROUTES
+// -------------------------------------------------------------------
+app.post('/api/visitor/register', async (req, res) => {
+  try {
+    const { email, tenantId = 'default' } = req.body;
+    if (!email) return res.status(400).json({ success: false, error: 'Email required' });
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '';
+
+    let visitor = await Visitor.findOne({ tenantId, email: normalizedEmail });
+
+    if (visitor && visitor.status === 'BANNED') {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
+    const geo = await detectGeo(ip);
+
+    if (!visitor) {
+      visitor = await Visitor.create({
+        email: normalizedEmail,
+        tenantId,
+        isOnline: true,
+        lastSeen: new Date(),
+        ...geo,
+      });
+    } else {
+      visitor.isOnline = true;
+      visitor.lastSeen = new Date();
+      Object.assign(visitor, geo);
+      await visitor.save();
+    }
+
+    res.json({ success: true, visitor });
+  } catch (err) {
+    log.error('Register error', { error: err.message });
+    res.status(500).json({ success: false, error: 'Registration failed' });
+  }
+});
+
+app.post('/api/visitor/heartbeat', async (req, res) => {
+  try {
+    const { email, tenantId = 'default' } = req.body;
+    await Visitor.updateOne(
+      { tenantId, email: email?.toLowerCase() },
+      { isOnline: true, lastSeen: new Date() }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
+// -------------------------------------------------------------------
+// ADMIN ROUTES
+// -------------------------------------------------------------------
+function requireAdmin(req, res, next) {
+  if (!req.session.admin) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  next();
+}
+
+app.get('/api/admin/visitors', requireAdmin, async (req, res) => {
+  try {
+    const admin = req.session.admin;
+    const filter = {};
+
+    if (admin.role === 'tenant') {
+      filter.tenantId = admin.tenantId;
+    } else if (req.query.tenantId) {
+      filter.tenantId = req.query.tenantId;
+    }
+
+    if (req.query.online === 'true') filter.isOnline = true;
+
+    const visitors = await Visitor.find(filter).sort({ lastSeen: -1 }).limit(100).lean();
+    res.json({ success: true, visitors });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to load visitors' });
+  }
+});
+
+app.post('/api/admin/message', requireAdmin, async (req, res) => {
+  try {
+    const admin = req.session.admin;
+    const { email, content, tenantId } = req.body;
+    const targetTenantId = admin.role === 'super' ? (tenantId || 'default') : admin.tenantId;
+
+    const visitor = await Visitor.findOne({ tenantId: targetTenantId, email: email.toLowerCase() });
     if (!visitor) return res.status(404).json({ success: false, error: 'Visitor not found' });
 
     const message = {
       sender: 'admin',
       content,
-      messageType,
-      mediaUrl,
+      messageType: 'text',
       timestamp: new Date(),
       read: false,
     };
+
     visitor.messages.push(message);
     await visitor.save();
 
-    // Emit via Socket.io (handled in socket layer)
-    req.io?.to(`room-${tenantId}-${email.toLowerCase()}`)?.emit('incoming-message', { ...message, _id: message._id });
+    io.to(`tenant:${targetTenantId}:visitor:${email.toLowerCase()}`).emit('incoming-message', message);
+    io.to(`tenant:${targetTenantId}:admin`).emit('message-sent', { email, message });
 
     res.json({ success: true, message });
   } catch (err) {
-    log.error('Send message failed', { error: err.message });
-    res.status(500).json({ success: false, error: 'Failed to send' });
+    res.status(500).json({ success: false, error: 'Failed to send message' });
   }
 });
 
-// ── Initiate Call (Admin → Visitor) ──
-app.post('/api/admin/call/initiate', async (req, res) => {
+app.post('/api/admin/visitor/ban', requireAdmin, async (req, res) => {
   try {
-    const { email, tenantId = 'default', persona = process.env.DEFAULT_PERSONA || 'annie' } = req.body;
-    if (!email) return res.status(400).json({ success: false, error: 'Email required' });
-    const visitor = await Visitor.findOne({ tenantId, email: email.toLowerCase() });
-    if (!visitor) return res.status(404).json({ success: false, error: 'Visitor not found' });
+    const admin = req.session.admin;
+    const { email, tenantId } = req.body;
+    const targetTenantId = admin.role === 'super' ? tenantId : admin.tenantId;
 
-    const callData = { targetEmail: email.toLowerCase(), tenantId, persona, initiatedBy: 'admin', timestamp: new Date() };
-    req.io?.to(`room-${tenantId}-${email.toLowerCase()}`)?.emit('incoming-call', callData);
+    await Visitor.updateOne(
+      { tenantId: targetTenantId, email: email.toLowerCase() },
+      { status: 'BANNED', isOnline: false }
+    );
 
-    res.json({ success: true, callId: uuidv4() });
+    io.to(`tenant:${targetTenantId}:visitor:${email.toLowerCase()}`).emit('force-disconnect', {
+      reason: 'You have been banned',
+    });
+
+    res.json({ success: true, message: 'Visitor banned' });
   } catch (err) {
-    log.error('Initiate call failed', { error: err.message });
+    res.status(500).json({ success: false, error: 'Ban failed' });
+  }
+});
+
+app.post('/api/admin/visitor/suspend', requireAdmin, async (req, res) => {
+  try {
+    const admin = req.session.admin;
+    const { email, tenantId } = req.body;
+    const targetTenantId = admin.role === 'super' ? tenantId : admin.tenantId;
+
+    await Visitor.updateOne(
+      { tenantId: targetTenantId, email: email.toLowerCase() },
+      { status: 'SUSPENDED' }
+    );
+
+    res.json({ success: true, message: 'Visitor suspended' });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
+app.delete('/api/admin/visitor/clear', requireAdmin, async (req, res) => {
+  try {
+    const admin = req.session.admin;
+    const { email, tenantId } = req.body;
+    const targetTenantId = admin.role === 'super' ? tenantId : admin.tenantId;
+
+    await Visitor.updateOne(
+      { tenantId: targetTenantId, email: email.toLowerCase() },
+      { messages: [] }
+    );
+
+    res.json({ success: true, message: 'Conversation cleared' });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
+app.post('/api/admin/call/initiate', requireAdmin, async (req, res) => {
+  try {
+    const admin = req.session.admin;
+    const { email, tenantId, persona = 'annie' } = req.body;
+    const targetTenantId = admin.role === 'super' ? tenantId : admin.tenantId;
+
+    const callId = crypto.randomBytes(8).toString('hex');
+
+    await Visitor.updateOne(
+      { tenantId: targetTenantId, email: email.toLowerCase() },
+      {
+        $push: {
+          callLogs: {
+            type: 'outgoing',
+            status: 'connected',
+            persona,
+            timestamp: new Date(),
+          },
+        },
+      }
+    );
+
+    io.to(`tenant:${targetTenantId}:visitor:${email.toLowerCase()}`).emit('incoming-call', {
+      callId,
+      persona,
+      from: admin.name || 'Support Agent',
+    });
+
+    res.json({ success: true, callId });
+  } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to initiate call' });
   }
 });
 
-// ── Payment Webhook (Multi-tenant Provisioning) ──
-app.post('/api/payment-webhook', async (req, res) => {
-  try {
-    // Verify webhook signature (implement per provider)
-    const { clientEmail, customPassword, tenantId, plan = 'monthly', provider = 'manual' } = req.body;
-    if (!clientEmail) return res.status(400).json({ success: false, error: 'clientEmail required' });
-
-    const tenant = tenantId || `tenant_${uuidv4().slice(0, 8)}`;
-    const normalizedEmail = clientEmail.toLowerCase().trim();
-    const assignedPassword = customPassword || `${process.env.DEFAULT_ADMIN_PASSWORD_PREFIX || 'Support_'}${uuidv4().slice(0, 8)}`;
-
-    let visitor = await Visitor.findOne({ tenantId: tenant, email: normalizedEmail });
-    if (!visitor) {
-      visitor = await Visitor.create({
-        tenantId: tenant,
-        email: normalizedEmail,
-        adminPassword: assignedPassword,
-        status: process.env.DEFAULT_TENANT_STATUS || 'ACTIVE',
-        sourcePanel: provider,
-        metadata: new Map([['plan', plan], ['provisionedAt', new Date().toISOString()]]),
-      });
-    } else {
-      visitor.status = process.env.DEFAULT_TENANT_STATUS || 'ACTIVE';
-      visitor.adminPassword = assignedPassword;
-      visitor.metadata = new Map([...visitor.metadata, ['plan', plan], ['updatedAt', new Date().toISOString()]]);
-      await visitor.save();
-    }
-
-    const adminUrl = `${process.env.APP_URL}/admin.html?tenant=${tenant}`;
-    const visitorUrl = `${process.env.APP_URL}/visitor.html?tenant=${tenant}`;
-
-    log.info('✅ Tenant provisioned', { tenant, email: normalizedEmail, provider, plan });
-
-    res.json({
-      success: true,
-      tenant,
-      adminUrl,
-      visitorUrl,
-      adminEmail: normalizedEmail,
-      adminPassword: assignedPassword,
-      hotlines: {
-        primary: process.env.HOTLINE_PRIMARY,
-        secondary: process.env.HOTLINE_SECONDARY,
-        whatsapp: process.env.HOTLINE_WHATSAPP,
-      },
-    });
-  } catch (err) {
-    log.error('Payment webhook failed', { error: err.message, body: req.body });
-    res.status(500).json({ success: false, error: 'Provisioning failed' });
-  }
-});
-
-// ── Clip Manifest (for video injector) ──
-app.get('/api/clips/manifest', (req, res) => {
-  const manifestPath = join(CLIPS_DIR, 'manifest.json');
-  if (existsSync(manifestPath)) {
-    return res.sendFile(manifestPath);
-  }
-  res.json({ success: false, error: 'Manifest not found', clips: {} });
-});
-
-// ────────────────────────────────────────────────────────────────────────
-// SOCKET.IO — REALTIME ENGINE
-// ────────────────────────────────────────────────────────────────────────
-const io = new Server(httpServer, {
-  pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL) || 10000,
-  pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT) || 5000,
-  upgradeTimeout: parseInt(process.env.SOCKET_UPGRADE_TIMEOUT) || 30000,
-  maxHttpBufferSize: parseInt(process.env.SOCKET_MAX_PAYLOAD_BYTES) || 1048576,
-  allowEIO3: process.env.SOCKET_ALLOW_EIO3 === 'true',
-  cors: { origin: corsOrigins.length ? corsOrigins : false, credentials: true },
-});
-
-// Share session with Socket.io
-io.use((socket, next) => {
-  sessionMiddleware(socket.request, {}, next);
-});
-
-// Room naming: room-{tenantId}-{email}
-function roomName(tenantId, email) {
-  return `room-${tenantId}-${email.toLowerCase()}`;
-}
-
+// -------------------------------------------------------------------
+// SOCKET.IO
+// -------------------------------------------------------------------
 io.on('connection', (socket) => {
-  const { session } = socket.request;
-  let currentRoom = null;
-  let currentEmail = null;
-  let currentTenant = 'default';
-  let isAdmin = false;
+  log.info('Socket connected', { id: socket.id });
 
-  log.debug('Socket connected', { id: socket.id, ip: socket.handshake.address });
+  socket.on('visitor-join', async ({ email, tenantId = 'default' }) => {
+    if (!email) return;
+    const room = `tenant:${tenantId}:visitor:${email.toLowerCase()}`;
+    socket.join(room);
+    socket.join(`tenant:${tenantId}:visitors`);
+    socket.data = { role: 'visitor', email: email.toLowerCase(), tenantId };
 
-  // Admin joins room to monitor/control a visitor
-  socket.on('admin-join', async ({ email, tenantId = 'default' }) => {
-    if (!session.admin || session.adminExpires <= Date.now()) {
-      return socket.emit('admin-authenticate', { success: false, error: 'Not authenticated' });
-    }
-    if (!email) return socket.emit('admin-authenticate', { success: false, error: 'Email required' });
+    await Visitor.updateOne(
+      { tenantId, email: email.toLowerCase() },
+      { isOnline: true, lastSeen: new Date() }
+    );
 
-    const visitor = await Visitor.findOne({ tenantId, email: email.toLowerCase() });
-    if (!visitor) return socket.emit('admin-authenticate', { success: false, error: 'Visitor not found' });
-
-    currentEmail = email.toLowerCase();
-    currentTenant = tenantId;
-    currentRoom = roomName(tenantId, currentEmail);
-    isAdmin = true;
-
-    socket.join(currentRoom);
-
-    // ——— ADMIN AUTHENTICATION RESULT ———
-    socket.emit('admin-authenticate', {
-      success: true,
-      visitor: buildVisitorPayload(visitor),
-      tenantId,
-      adminName: session.admin.role === 'tenant' ? visitor.customAdminName : 'Super Admin',
-    });
-
-    log.info('👮 Admin joined room', { admin: session.admin.email, room: currentRoom });
+    io.to(`tenant:${tenantId}:admin`).emit('visitor-online', { email, tenantId });
   });
 
-  // ——— VISITOR REGISTERS / RECONNECTS ———
-  socket.on('visitor-register', async ({ email, tenantId = 'default' }) => {
-    if (!email) return socket.emit('visitor-error', { error: 'Email required' });
-    const normalizedEmail = email.toLowerCase().trim();
-    const visitor = await Visitor.findOne({ tenantId, email: normalizedEmail });
-    if (!visitor) return socket.emit('visitor-error', { error: 'Visitor not found. Register via HTTP first.' });
-
-    currentEmail = normalizedEmail;
-    currentTenant = tenantId;
-    currentRoom = roomName(tenantId, currentEmail);
-
-    socket.join(currentRoom);
-    await updateVisitorOnlineStatus(normalizedEmail, tenantId, true);
-
-    socket.emit('visitor-authenticate', {
-      success: true,
-      visitor: buildVisitorPayload(visitor),
-      tenantId,
-      adminName: visitor.customAdminName,
-      hotlines: {
-        primary: process.env.HOTLINE_PRIMARY,
-        secondary: process.env.HOTLINE_SECONDARY,
-        whatsapp: process.env.HOTLINE_WHATSAPP,
-      },
-    });
-
-    // Notify admin if present
-    socket.to(currentRoom).emit('visitor-status', { online: true, lastSeen: new Date() });
-
-    log.info('👤 Visitor joined room', { email: normalizedEmail, room: currentRoom });
+  socket.on('admin-join', ({ tenantId }) => {
+    if (!tenantId) return;
+    socket.join(`tenant:${tenantId}:admin`);
+    socket.data = { role: 'admin', tenantId };
   });
 
-  // ——— REALTIME MESSAGE (both directions) ———
-  socket.on('send-message', async ({ content, messageType = 'text', mediaUrl, translation }) => {
-    if (!currentRoom || !currentEmail) return socket.emit('error', { error: 'Not in a room' });
-    if (!content || !content.trim()) return;
+  socket.on('send-message', async ({ content }) => {
+    const { email, tenantId } = socket.data || {};
+    if (!email || !tenantId || !content) return;
 
-    const visitor = await Visitor.findOne({ tenantId: currentTenant, email: currentEmail });
-    if (!visitor) return socket.emit('error', { error: 'Visitor not found' });
+    const visitor = await Visitor.findOne({ tenantId, email });
+    if (!visitor || visitor.status === 'BANNED') return;
 
-    const sender = isAdmin ? 'admin' : 'visitor';
     const message = {
-      sender,
-      content: content.trim(),
-      messageType,
-      mediaUrl,
-      translation,
+      sender: 'visitor',
+      content,
+      messageType: 'text',
       timestamp: new Date(),
-      read: isAdmin, // Admin messages are pre-read; visitor messages unread until admin sees
+      read: false,
     };
 
     visitor.messages.push(message);
-    visitor.lastSeen = new Date();
     await visitor.save();
 
-    const payload = { ...message, _id: message._id };
-    io.to(currentRoom).emit('incoming-message', payload);
-
-    log.debug('💬 Message', { room: currentRoom, sender, type: messageType });
+    io.to(`tenant:${tenantId}:admin`).emit('incoming-message', { email, message });
   });
 
-  // ——— MARK MESSAGES READ ———
-  socket.on('mark-read', async () => {
-    if (!currentRoom || !currentEmail) return;
-    await Visitor.updateOne(
-      { tenantId: currentTenant, email: currentEmail, 'messages.read': false },
-      { $set: { 'messages.$[elem].read': true } },
-      { arrayFilters: [{ 'elem.read': false, 'elem.sender': { $ne: isAdmin ? 'admin' : 'visitor' } }] }
-    );
-    io.to(currentRoom).emit('messages-read', { by: isAdmin ? 'admin' : 'visitor' });
+  socket.on('inject-clip', ({ email, tenantId, clipId, persona, loop = false }) => {
+    const targetTenantId = socket.data?.tenantId || tenantId;
+    if (!targetTenantId || !email) return;
+    io.to(`tenant:${targetTenantId}:visitor:${email.toLowerCase()}`).emit('play-clip', {
+      clipId,
+      persona,
+      loop,
+    });
   });
 
-  // ——— TYPING INDICATOR ———
-  socket.on('typing', ({ isTyping }) => {
-    if (!currentRoom) return;
-    socket.to(currentRoom).emit('user-typing', { isTyping, by: isAdmin ? 'admin' : 'visitor' });
+  socket.on('call-response', ({ callId, accepted, email, tenantId }) => {
+    io.to(`tenant:${tenantId}:admin`).emit('call-response', { callId, accepted, email });
   });
 
-  // ——— VIDEO CALL SIGNALING (Pre-recorded clip injection) ———
-  socket.on('initiate-call', ({ persona, clipId }) => {
-    if (!currentRoom) return;
-    const payload = {
-      callId: uuidv4(),
-      targetEmail: currentEmail,
-      tenantId: currentTenant,
-      persona: persona || process.env.DEFAULT_PERSONA || 'annie',
-      clipId: clipId || process.env.DEFAULT_CLIP_HELLO || 'hello',
-      initiatedBy: isAdmin ? 'admin' : 'visitor',
-      timestamp: new Date(),
-    };
-    io.to(currentRoom).emit('incoming-call', payload);
-    log.info('📞 Call initiated', { room: currentRoom, ...payload });
+  socket.on('end-call', ({ email, tenantId, duration = 0 }) => {
+    io.to(`tenant:${tenantId}:visitor:${email.toLowerCase()}`).emit('call-ended');
+    io.to(`tenant:${tenantId}:admin`).emit('call-ended', { email, duration });
   });
 
-  socket.on('accept-call', ({ callId }) => {
-    if (!currentRoom) return;
-    io.to(currentRoom).emit('call-connected', { callId, timestamp: new Date() });
-    log.info('✅ Call accepted', { room: currentRoom, callId });
-  });
-
-  socket.on('reject-call', ({ callId, reason }) => {
-    if (!currentRoom) return;
-    io.to(currentRoom).emit('call-ended', { callId, reason, timestamp: new Date() });
-    log.info('❌ Call rejected', { room: currentRoom, callId });
-  });
-
-  socket.on('hang-up', ({ callId, duration }) => {
-    if (!currentRoom) return;
-    const secs = Math.round(duration / 1000) || 0;
-    io.to(currentRoom).emit('call-ended', { callId, duration: secs, timestamp: new Date() });
-
-    // Log call
-    Visitor.updateOne(
-      { tenantId: currentTenant, email: currentEmail },
-      { $push: { callLogs: { type: isAdmin ? 'outgoing' : 'incoming', status: 'ended', duration: secs, timestamp: new Date() } } }
-    ).catch(log.error);
-    log.info('📴 Call ended', { room: currentRoom, callId, duration: secs });
-  });
-
-  // ——— INJECT CUSTOM CLIP DURING CALL ———
-  socket.on('inject-clip', ({ clipId, persona }) => {
-    if (!currentRoom) return;
-    if (!isAdmin) return socket.emit('error', { error: 'Only admin can inject clips' });
-    io.to(currentRoom).emit('clip-injected', { clipId, persona, timestamp: new Date() });
-    log.info('🎬 Clip injected', { room: currentRoom, clipId, persona });
-  });
-
-  // ——— ADMIN REQUESTS VISITOR LIST ———
-  socket.on('request-visitor-list', async ({ tenantId = 'default', status, online, search }) => {
-    if (!session.admin || session.adminExpires <= Date.now()) return;
-    const query = { tenantId };
-    if (status) query.status = status;
-    if (online === 'true') query.isOnline = true;
-    if (search) {
-      const regex = new RegExp(search.toLowerCase(), 'i');
-      query.$or = [{ email: regex }, { city: regex }, { country: regex }];
+  socket.on('disconnect', async () => {
+    const { email, tenantId, role } = socket.data || {};
+    if (role === 'visitor' && email && tenantId) {
+      await Visitor.updateOne(
+        { tenantId, email },
+        { isOnline: false, lastSeen: new Date() }
+      );
+      io.to(`tenant:${tenantId}:admin`).emit('visitor-offline', { email });
     }
-    const visitors = await Visitor.find(query)
-      .sort({ isOnline: -1, lastSeen: -1 })
-      .limit(100)
-      .lean();
-    socket.emit('visitor-list', { visitors: visitors.map(buildVisitorPayload) });
-  });
-
-  // ——— DISCONNECT ———
-  socket.on('disconnect', async (reason) => {
-    if (currentRoom && currentEmail) {
-      await updateVisitorOnlineStatus(currentEmail, currentTenant, false);
-      socket.to(currentRoom).emit('visitor-status', { online: false, lastSeen: new Date() });
-      log.info('🔌 Disconnected', { room: currentRoom, reason });
-    }
-  });
-
-  // ——— ERROR HANDLING ———
-  socket.on('error', (err) => {
-    log.error('Socket error', { id: socket.id, error: err.message, stack: err.stack });
   });
 });
 
-// Attach io to app for route access
-app.set('io', io);
-
-// ────────────────────────────────────────────────────────────────────────
-// MAINTENANCE WORKER (runs in-process, no external cron needed)
-// ────────────────────────────────────────────────────────────────────────
-async function runMaintenance() {
-  const start = Date.now();
-  log.info('🧹 Maintenance started');
-
-  try {
-    // 1. Prune old call logs
-    const callLogCutoff = new Date(Date.now() - parseInt(process.env.MAINT_MAX_CALL_LOG_AGE_DAYS) * 86400000 || 90 * 86400000);
-    const callResult = await Visitor.updateMany(
-      {},
-      { $pull: { callLogs: { timestamp: { $lt: callLogCutoff } } } }
-    );
-    log.info('Call logs pruned', { modified: callResult.modifiedCount });
-
-    // 2. Prune old messages (keep last N per visitor, or by age)
-    const msgCutoff = new Date(Date.now() - parseInt(process.env.MAINT_MAX_MESSAGE_AGE_DAYS) * 86400000 || 365 * 86400000);
-    const msgResult = await Visitor.updateMany(
-      {},
-      { $pull: { messages: { timestamp: { $lt: msgCutoff } } } }
-    );
-    log.info('Messages pruned', { modified: msgResult.modifiedCount });
-
-    // 3. Mark stale visitors offline (no heartbeat > 5 min)
-    const staleCutoff = new Date(Date.now() - 5 * 60 * 1000);
-    const staleResult = await Visitor.updateMany(
-      { isOnline: true, lastSeen: { $lt: staleCutoff } },
-      { $set: { isOnline: false } }
-    );
-    log.info('Stale visitors marked offline', { modified: staleResult.modifiedCount });
-
-    // 4. Memory watchdog
-    const mem = process.memoryUsage();
-    const memMB = Math.round(mem.rss / 1024 / 1024);
-    if (memMB > parseInt(process.env.MEMORY_WATCHDOG_MB) || 512) {
-      log.warn('⚠️ Memory watchdog triggered', { rssMB: memMB, heapUsedMB: Math.round(mem.heapUsed / 1024 / 1024) });
-      // In production, PM2 handles restart. Here we just log.
-    }
-
-    log.info('✅ Maintenance complete', { durationMs: Date.now() - start });
-  } catch (err) {
-    log.error('Maintenance failed', { error: err.message, stack: err.stack });
-  }
-}
-
-// Schedule maintenance
-setInterval(runMaintenance, parseInt(process.env.MAINT_INTERVAL_MS) || 86400000);
-// Run once on startup (after DB connects)
-setTimeout(runMaintenance, 10000);
-
-// ────────────────────────────────────────────────────────────────────────
-// GRACEFUL SHUTDOWN
-// ────────────────────────────────────────────────────────────────────────
-const shutdown = async (signal) => {
-  log.info(`${signal} received. Graceful shutdown...`);
-  const shutdownTimeout = setTimeout(() => {
-    log.error('❌ Forced exit after 10s');
-    process.exit(1);
-  }, 10000);
-
-  // Stop accepting new connections
-  httpServer.close(() => log.info('HTTP server closed'));
-
-  // Close Socket.io
-  io.close(() => log.info('Socket.io closed'));
-
-  // Close MongoDB
-  await mongoose.connection.close(false).then(() => log.info('MongoDB closed'));
-
-  clearTimeout(shutdownTimeout);
-  process.exit(0);
-};
-
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('uncaughtException', (err) => {
-  log.error('Uncaught exception', { error: err.message, stack: err.stack });
-  shutdown('UNCAUGHT_EXCEPTION');
-});
-process.on('unhandledRejection', (reason) => {
-  log.error('Unhandled rejection', { reason: String(reason) });
+// -------------------------------------------------------------------
+// HEALTH
+// -------------------------------------------------------------------
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    version: '2.0.0-finalboss',
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// ────────────────────────────────────────────────────────────────────────
+// -------------------------------------------------------------------
 // START SERVER
-// ────────────────────────────────────────────────────────────────────────
-const PORT = parseInt(process.env.PORT) || 10000;
+// -------------------------------------------------------------------
+const PORT = process.env.PORT || 10000;
 
 connectMongo()
   .then(() => {
     httpServer.listen(PORT, () => {
-      log.info('🚀 Reebow Platform started', {
-        port: PORT,
-        env: process.env.NODE_ENV,
-        pid: process.pid,
-        node: process.version,
-        publicDir: PUBLIC_DIR,
-      });
+      log.info(`🚀 Reebow TECH Final Boss running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    log.error('Startup failed', { error: err.message, stack: err.stack });
+    log.error('Startup failed', { error: err.message });
     process.exit(1);
   });
-
-export { app, httpServer, io, Visitor, AdminSession };
