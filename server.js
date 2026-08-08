@@ -756,7 +756,7 @@ io.on('connection', (socket) => {
     isAdmin = true;
 
     socket.join(currentRoom);
-    socket.emit('admin
+    socket.emit('admin-action', { success: true });
     // ════════════════════════════════════════════════════════════════════════
 // CONTINUATION: Socket.io Event Handlers
 // ════════════════════════════════════════════════════════════════════════
