@@ -268,7 +268,7 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Session store
 const sessionStore = MongoStore.create({
-  client: mongoose.connection.getClient(),
+mongoUrl: process.env.MONGODB_URL,
   dbName,
   collectionName: 'sessions',
   ttl: Math.floor((parseInt(process.env.SESSION_MAX_AGE_MS) || 2592000000) / 1000),
