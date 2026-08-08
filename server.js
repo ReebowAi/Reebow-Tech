@@ -1,4 +1,3 @@
-════════════════════════════════════════════════════════════════════════
 // REEBOW TECH PLATFORM — SERVER.JS
 // Single-file backend: Express + Socket.io + Mongoose + Sessions + Webhooks
 // Run: npm start  |  Dev: npm run dev
