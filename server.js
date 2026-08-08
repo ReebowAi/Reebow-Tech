@@ -1,3 +1,4 @@
+// ════════════════════════════════════════════════════════════════════════
 // REEBOW TECH PLATFORM — SERVER.JS
 // Single-file backend: Express + Socket.io + Mongoose + Sessions + Webhooks
 // Run: npm start  |  Dev: npm run dev
@@ -268,7 +269,7 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Session store
 const sessionStore = MongoStore.create({
-mongoUrl: process.env.MONGODB_URL,
+  client: mongoose.connection.getClient(),
   dbName,
   collectionName: 'sessions',
   ttl: Math.floor((parseInt(process.env.SESSION_MAX_AGE_MS) || 2592000000) / 1000),
@@ -358,9 +359,7 @@ app.use(express.static(PUBLIC_DIR, {
     if (path.endsWith('.js') || path.endsWith('.css')) res.set('Cache-Control', 'public, max-age=31536000, immutable');
   },
 }));
-app.get('*', (req, res) => {
-  res.sendFile(join(PUBLIC_DIR, 'index.html'));
-});
+
 // ────────────────────────────────────────────────────────────────────────
 // UTILITY FUNCTIONS
 // ────────────────────────────────────────────────────────────────────────
@@ -758,20 +757,16 @@ io.on('connection', (socket) => {
     isAdmin = true;
 
     socket.join(currentRoom);
-    socket.emit('admin-action', { success: true });
-    // ════════════════════════════════════════════════════════════════════════
-// CONTINUATION: Socket.io Event Handlers
-// ════════════════════════════════════════════════════════════════════════
 
-  // ——— ADMIN AUTHENTICATION RESULT ———
-  socket.emit('admin-authenticate', {
-    success: true,
-    visitor: buildVisitorPayload(visitor),
-    tenantId,
-    adminName: session.admin.role === 'tenant' ? visitor.customAdminName : 'Super Admin',
-  });
+    // ——— ADMIN AUTHENTICATION RESULT ———
+    socket.emit('admin-authenticate', {
+      success: true,
+      visitor: buildVisitorPayload(visitor),
+      tenantId,
+      adminName: session.admin.role === 'tenant' ? visitor.customAdminName : 'Super Admin',
+    });
 
-  log.info('👮 Admin joined room', { admin: session.admin.email, room: currentRoom });
+    log.info('👮 Admin joined room', { admin: session.admin.email, room: currentRoom });
   });
 
   // ——— VISITOR REGISTERS / RECONNECTS ———
