@@ -358,7 +358,9 @@ app.use(express.static(PUBLIC_DIR, {
     if (path.endsWith('.js') || path.endsWith('.css')) res.set('Cache-Control', 'public, max-age=31536000, immutable');
   },
 }));
-
+app.get('*', (req, res) => {
+  res.sendFile(join(PUBLIC_DIR, 'index.html'));
+});
 // ────────────────────────────────────────────────────────────────────────
 // UTILITY FUNCTIONS
 // ────────────────────────────────────────────────────────────────────────
