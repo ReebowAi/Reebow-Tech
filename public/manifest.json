@@ -3,8 +3,8 @@
   "short_name": "Reebow",
   "description": "Telegram-style real-time messaging & video call platform. Live chat, video injection, geo detection, offline resilience. Multi-tenant, white-label ready.",
   "version": "2.0.0",
-  "start_url": "/visitor.html?source=pwa",
-  "scope": "/",
+  "start_url": "visitor.html?source=pwa",
+  "scope": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
@@ -15,55 +15,55 @@
   "categories": ["business", "productivity", "communication", "social"],
   "icons": [
     {
-      "src": "/icon-72.png",
+      "src": "icon-72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-96.png",
+      "src": "icon-96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-128.png",
+      "src": "icon-128.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-144.png",
+      "src": "icon-144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-152.png",
+      "src": "icon-152.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-384.png",
+      "src": "icon-384.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-1024.png",
+      "src": "icon-1024.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any maskable"
@@ -74,48 +74,48 @@
       "name": "New Chat",
       "short_name": "Chat",
       "description": "Start a new conversation with support",
-      "url": "/visitor.html?action=new-chat",
-      "icons": [{ "src": "/shortcut-chat.png", "sizes": "192x192" }]
+      "url": "visitor.html?action=new-chat",
+      "icons": [{ "src": "shortcut-chat.png", "sizes": "192x192" }]
     },
     {
       "name": "Call History",
       "short_name": "Calls",
       "description": "View your recent video calls",
-      "url": "/visitor.html#calls",
-      "icons": [{ "src": "/shortcut-calls.png", "sizes": "192x192" }]
+      "url": "visitor.html#calls",
+      "icons": [{ "src": "shortcut-calls.png", "sizes": "192x192" }]
     },
     {
       "name": "Settings",
       "short_name": "Settings",
       "description": "Manage notifications, language, theme",
-      "url": "/visitor.html#settings",
-      "icons": [{ "src": "/shortcut-settings.png", "sizes": "192x192" }]
+      "url": "visitor.html#settings",
+      "icons": [{ "src": "shortcut-settings.png", "sizes": "192x192" }]
     }
   ],
   "screenshots": [
     {
-      "src": "/screenshot-chat-wide.png",
+      "src": "screenshot-chat-wide.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Chat interface with real-time messaging"
     },
     {
-      "src": "/screenshot-call-wide.png",
+      "src": "screenshot-call-wide.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Video call with persona injection"
     },
     {
-      "src": "/screenshot-chat-narrow.png",
+      "src": "screenshot-chat-narrow.png",
       "sizes": "750x1334",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Mobile chat view"
     },
     {
-      "src": "/screenshot-admin-wide.png",
+      "src": "screenshot-admin-wide.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
@@ -123,7 +123,7 @@
     }
   ],
   "share_target": {
-    "action": "/visitor.html?share=target",
+    "action": "visitor.html?share=target",
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
@@ -141,13 +141,13 @@
   "protocol_handlers": [
     {
       "protocol": "web+reebow",
-      "url": "/visitor.html?protocol=%s",
+      "url": "visitor.html?protocol=%s",
       "description": "Open Reebow links"
     }
   ],
   "file_handlers": [
     {
-      "action": "/visitor.html?file=handler",
+      "action": "visitor.html?file=handler",
       "accept": {
         "image/*": [".png", ".jpg", ".jpeg", ".webp", ".gif"],
         "video/*": [".mp4", ".webm", ".mov"],
@@ -155,7 +155,7 @@
         "application/pdf": [".pdf"]
       },
       "icons": [
-        { "src": "/icon-192.png", "sizes": "192x192" }
+        { "src": "icon-192.png", "sizes": "192x192" }
       ]
     }
   ],
@@ -166,20 +166,20 @@
   },
   "launch_handler": {
     "client_mode": "focus-existing",
-    "target_url": "/visitor.html?source=launch"
+    "target_url": "visitor.html?source=launch"
   },
   "handle_links": "preferred",
   "capture_links": "existing-client-navigate",
   "icons_maskable": true,
   "maskable_icons": [
     {
-      "src": "/icon-maskable-192.png",
+      "src": "icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icon-maskable-512.png",
+      "src": "icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -199,10 +199,10 @@
     }
   ],
   "preload_pages": [
-    "/visitor.html",
-    "/admin.html",
-    "/style.css",
-    "/mobile-fix.css"
+    "visitor.html",
+    "admin.html",
+    "style.css",
+    "mobile-fix.css"
   ],
   "devel_mode": false,
   "dev_options": {
