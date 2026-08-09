@@ -164,14 +164,17 @@ build/
 *.diff
 
 # ────────────────────────────────────────────────────────────────────────
-# KEEP THESE (Explicit un-ignore for critical config files)
+# KEEP THESE (Explicit un-ignore for critical config files & assets)
 # ────────────────────────────────────────────────────────────────────────
 !.gitignore
 !.env.example
 !public/clips/manifest.json
 !public/manifest.json
 !public/sw.js
-!public/icon-192.png
-!public/icon-512.png
+!public/style.css
+!public/mobile-fix.css
+!public/icon-*.png
+!public/shortcut-*.png
+!public/screenshot-*.png
 !.github/
 !.github/workflows/
