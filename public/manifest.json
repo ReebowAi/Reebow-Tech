@@ -15,44 +15,8 @@
   "categories": ["business", "productivity", "communication", "social"],
   "icons": [
     {
-      "src": "icon-72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-384.png",
-      "sizes": "384x384",
       "type": "image/png",
       "purpose": "any maskable"
     },
@@ -69,59 +33,8 @@
       "purpose": "any maskable"
     }
   ],
-  "shortcuts": [
-    {
-      "name": "New Chat",
-      "short_name": "Chat",
-      "description": "Start a new conversation with support",
-      "url": "visitor.html?action=new-chat",
-      "icons": [{ "src": "shortcut-chat.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Call History",
-      "short_name": "Calls",
-      "description": "View your recent video calls",
-      "url": "visitor.html#calls",
-      "icons": [{ "src": "shortcut-calls.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Settings",
-      "short_name": "Settings",
-      "description": "Manage notifications, language, theme",
-      "url": "visitor.html#settings",
-      "icons": [{ "src": "shortcut-settings.png", "sizes": "192x192" }]
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "screenshot-chat-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Chat interface with real-time messaging"
-    },
-    {
-      "src": "screenshot-call-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Video call with persona injection"
-    },
-    {
-      "src": "screenshot-chat-narrow.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Mobile chat view"
-    },
-    {
-      "src": "screenshot-admin-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Admin control tower dashboard"
-    }
-  ],
+  "shortcuts": [],
+  "screenshots": [],
   "share_target": {
     "action": "visitor.html?share=target",
     "method": "POST",
@@ -173,13 +86,13 @@
   "icons_maskable": true,
   "maskable_icons": [
     {
-      "src": "icon-maskable-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "icon-maskable-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
