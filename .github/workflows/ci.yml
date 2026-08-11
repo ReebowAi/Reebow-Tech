@@ -1,6 +1,6 @@
 # ════════════════════════════════════════════════════════════════════════
-# REEBOW TECH PLATFORM — GITHUB ACTIONS CI/CD
-# Multi-stage: Lint → Test → Build → Security → Deploy
+# REEBOW TECH PLATFORM — GITHUB ACTIONS AUTOMATION (CI/CD)
+# Multi-stage checks: Code Check → Testing → Security → Build & Deploy
 # Version: 2.0.0
 # ════════════════════════════════════════════════════════════════════════
 
@@ -15,13 +15,13 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Deploy environment'
+        description: 'Target deployment environment'
         required: true
         default: 'staging'
         type: choice
         options: [staging, production]
       skip_tests:
-        description: 'Skip test suite'
+        description: 'Skip running test suite'
         required: false
         default: false
         type: boolean
@@ -32,41 +32,41 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 # ════════════════════════════════════════════════════════════════════════
-# JOBS
+# JOBS DEFINITION
 # ════════════════════════════════════════════════════════════════════════
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────
-  # CODE QUALITY
+  # CODE QUALITY CHECK
   # ─────────────────────────────────────────────────────────────────────
   lint:
-    name: Lint & Format Check
+    name: Code Style & Linting Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout repository
+      - name: Checkout repository files
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install Project Dependencies
         run: npm ci --prefer-offline --no-audit
 
-      - name: Run ESLint
+      - name: Run ESLint Check
         run: npm run lint
 
-      - name: Check Prettier formatting
+      - name: Check Code Formatting (Prettier)
         run: npx prettier --check "**/*.{js,json,md,yml,yaml,html,css}"
 
   # ─────────────────────────────────────────────────────────────────────
-  # UNIT & INTEGRATION TESTS
+  # AUTOMATED TESTING SUITE
   # ─────────────────────────────────────────────────────────────────────
   test:
-    name: Test Suite
+    name: Run Test Suite & Database Integration
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: ${{ github.event_name != 'workflow_dispatch' || !inputs.skip_tests }}
@@ -76,22 +76,21 @@ jobs:
         ports: ['27017:27017']
         options: --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'" --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-      - name: Checkout repository
+      - name: Checkout repository files
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install Project Dependencies
         run: npm ci --prefer-offline --no-audit
 
-      - name: Generate test clips manifest
+      - name: Prepare Test Clips & Manifest File
         run: |
           mkdir -p public/clips/annie public/clips/craig
-          # Create minimal test clips (1-sec silent MP4)
           ffmpeg -f lavfi -i color=c=black:s=1280x720 -t 1 -c:v libx264 -pix_fmt yuv420p public/clips/annie/hello.mp4 -y
           ffmpeg -f lavfi -i color=c=black:s=1280x720 -t 2 -c:v libx264 -pix_fmt yuv420p public/clips/annie/listening.mp4 -y
           cp public/clips/annie/hello.mp4 public/clips/annie/thinking.mp4
@@ -99,7 +98,6 @@ jobs:
           cp public/clips/annie/hello.mp4 public/clips/annie/no.mp4
           cp public/clips/annie/hello.mp4 public/clips/annie/goodbye.mp4
           cp -r public/clips/annie/* public/clips/craig/
-          # Generate manifest
           node -e "
             const fs = require('fs'), path = require('path');
             const base = '/clips', personas = ['annie','craig'];
@@ -112,7 +110,7 @@ jobs:
             fs.writeFileSync('public/clips/manifest.json', JSON.stringify(m, null, 2));
           "
 
-      - name: Run unit tests
+      - name: Run Unit Tests
         run: npm test --if-present
         env:
           MONGO_URI: mongodb://localhost:27017/reebow-test
@@ -121,7 +119,7 @@ jobs:
           DEV_DISABLE_RATE_LIMIT: 'true'
           SESSION_SECRET: test-secret-for-ci-only-do-not-use-in-production
 
-      - name: Upload coverage
+      - name: Upload Test Coverage Reports
         uses: codecov/codecov-action@v4
         if: always()
         with:
@@ -129,36 +127,36 @@ jobs:
           fail_ci_if_error: false
 
   # ─────────────────────────────────────────────────────────────────────
-  # SECURITY SCANNING
+  # SECURITY & DEPENDENCY AUDIT
   # ─────────────────────────────────────────────────────────────────────
   security:
-    name: Security Audit
+    name: Security & Vulnerability Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout repository
+      - name: Checkout repository files
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install Project Dependencies
         run: npm ci --prefer-offline --no-audit
 
-      - name: Run npm audit
+      - name: Run Package Vulnerability Audit
         run: npm audit --audit-level=high --json > audit-report.json || true
 
-      - name: Upload audit report
+      - name: Upload Security Audit Report
         uses: actions/upload-artifact@v4
         with:
           name: npm-audit-report
           path: audit-report.json
           retention-days: 7
 
-      - name: Check for secrets in code
+      - name: Scan Code for Exposed Secrets
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
@@ -166,7 +164,7 @@ jobs:
           head: HEAD
           extra_args: --only-verified --fail
 
-      - name: Snyk security scan
+      - name: Snyk Vulnerability Assessment
         uses: snyk/actions/node@master
         if: env.SNYK_TOKEN != ''
         env:
@@ -176,10 +174,10 @@ jobs:
           args: --org=reebow-tech
 
   # ─────────────────────────────────────────────────────────────────────
-  # DOCKER BUILD
+  # CONTAINER IMAGE BUILD & PUSH
   # ─────────────────────────────────────────────────────────────────────
   docker:
-    name: Build & Push Docker Image
+    name: Build & Push Container Image
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [lint, test, security]
@@ -190,20 +188,20 @@ jobs:
       attestations: write
       id-token: write
     steps:
-      - name: Checkout repository
+      - name: Checkout repository files
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
+      - name: Setup Docker Buildx Environment
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry
+      - name: Authenticate with Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
+      - name: Extract Image Tags and Labels Metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -216,12 +214,12 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.title=Reebow TECH Platform
-            org.opencontainers.image.description=Telegram-style real-time messaging & video call platform
+            org.opencontainers.image.description=Secure real-time messaging and video call platform
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=MIT
 
-      - name: Build and push
+      - name: Build and Push Multi-Architecture Image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -236,26 +234,26 @@ jobs:
             VCS_REF=${{ github.sha }}
             VERSION=${{ steps.meta.outputs.version }}
 
-      - name: Sign image (cosign)
+      - name: Sign Container Image with Cosign
         if: env.COSIGN_PRIVATE_KEY != ''
         run: |
           echo "${{ secrets.COSIGN_PRIVATE_KEY }}" | cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.meta.outputs.tags }}
 
   # ─────────────────────────────────────────────────────────────────────
-  # DEPLOY STAGING
+  # STAGING DEPLOYMENT
   # ─────────────────────────────────────────────────────────────────────
   deploy-staging:
-    name: Deploy to Staging
+    name: Deploy to Staging Environment
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [docker]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     environment: staging
     steps:
-      - name: Checkout repository
+      - name: Checkout repository files
         uses: actions/checkout@v4
 
-      - name: Deploy to Render (Staging)
+      - name: Deploy Update to Render (Staging)
         if: env.RENDER_API_KEY != ''
         uses: render/deploy-action@v1
         with:
@@ -264,7 +262,7 @@ jobs:
           wait-for-success: true
           timeout: 300
 
-      - name: Deploy to Railway (Staging)
+      - name: Deploy Update to Railway (Staging)
         if: env.RAILWAY_TOKEN != ''
         uses: railwayapp/railway-deploy@v1
         with:
@@ -272,7 +270,7 @@ jobs:
           project: ${{ secrets.RAILWAY_PROJECT_ID }}
           environment: staging
 
-      - name: Deploy to DigitalOcean (Staging)
+      - name: Deploy Update to DigitalOcean (Staging)
         if: env.DO_TOKEN != ''
         uses: digitalocean/action-doctl@v2
         with:
@@ -282,33 +280,32 @@ jobs:
         run: |
           doctl apps create-deployment ${{ secrets.DO_STAGING_APP_ID }} --wait
 
-      - name: Health check staging
+      - name: Verify Staging Health Status
         run: |
           sleep 30
           for i in {1..10}; do
             if curl -fsS "${{ secrets.STAGING_URL }}/health" | grep -q '"status":"ok"'; then
-              echo "✅ Staging healthy"
+              echo "Staging environment is healthy."
               exit 0
             fi
-            echo "Waiting... ($i/10)"
+            echo "Waiting for service response... ($i/10)"
             sleep 15
           done
-          echo "❌ Staging health check failed"
+          echo "Staging health check failed."
           exit 1
 
-      - name: Run smoke tests
+      - name: Run Staging Smoke Tests
         run: |
-          # Test critical endpoints
           curl -fsS "${{ secrets.STAGING_URL }}/api/version" | grep -q "2.0.0"
           curl -fsS "${{ secrets.STAGING_URL }}/manifest.json" | grep -q "Reebow Messenger"
           curl -fsS "${{ secrets.STAGING_URL }}/sw.js" | grep -q "SW_VERSION"
-          echo "✅ Smoke tests passed"
+          echo "Staging smoke tests passed successfully."
 
   # ─────────────────────────────────────────────────────────────────────
-  # DEPLOY PRODUCTION
+  # PRODUCTION DEPLOYMENT
   # ─────────────────────────────────────────────────────────────────────
   deploy-production:
-    name: Deploy to Production
+    name: Deploy to Production Environment
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [docker]
@@ -318,10 +315,10 @@ jobs:
       contents: read
       packages: read
     steps:
-      - name: Checkout repository
+      - name: Checkout repository files
         uses: actions/checkout@v4
 
-      - name: Deploy to Render (Production)
+      - name: Deploy Release to Render (Production)
         if: env.RENDER_API_KEY != ''
         uses: render/deploy-action@v1
         with:
@@ -330,7 +327,7 @@ jobs:
           wait-for-success: true
           timeout: 600
 
-      - name: Deploy to Railway (Production)
+      - name: Deploy Release to Railway (Production)
         if: env.RAILWAY_TOKEN != ''
         uses: railwayapp/railway-deploy@v1
         with:
@@ -338,7 +335,7 @@ jobs:
           project: ${{ secrets.RAILWAY_PROJECT_ID }}
           environment: production
 
-      - name: Deploy to DigitalOcean (Production)
+      - name: Deploy Release to DigitalOcean (Production)
         if: env.DO_TOKEN != ''
         uses: digitalocean/action-doctl@v2
         with:
@@ -348,21 +345,21 @@ jobs:
         run: |
           doctl apps create-deployment ${{ secrets.DO_PROD_APP_ID }} --wait
 
-      - name: Health check production
+      - name: Verify Production Health Status
         run: |
           sleep 45
           for i in {1..15}; do
             if curl -fsS "${{ secrets.PROD_URL }}/health" | grep -q '"status":"ok"'; then
-              echo "✅ Production healthy"
+              echo "Production environment is healthy."
               exit 0
             fi
-            echo "Waiting... ($i/15)"
+            echo "Waiting for service response... ($i/15)"
             sleep 30
           done
-          echo "❌ Production health check failed - manual intervention required"
+          echo "Production health check failed - manual inspection required."
           exit 1
 
-      - name: Create GitHub Release
+      - name: Create Official GitHub Release Entry
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/v')
         with:
@@ -371,68 +368,64 @@ jobs:
           body: |
             ## Reebow TECH Platform ${{ github.ref_name }}
             
-            ### Changes
-            ${{
-              github.event.repository.description
-            }}
+            ### Release Summary
+            ${{ github.event.repository.description }}
             
-            ### Deployment
-            - **Docker Image**: `ghcr.io/${{ github.repository }}:${{ github.ref_name }}`
+            ### Deployment Information
+            - **Container Image**: `ghcr.io/${{ github.repository }}:${{ github.ref_name }}`
             - **Production URL**: ${{ secrets.PROD_URL }}
             - **Admin Panel**: ${{ secrets.PROD_URL }}/admin.html
-            - **Visitor Chat**: ${{ secrets.PROD_URL }}/visitor.html
+            - **Visitor Portal**: ${{ secrets.PROD_URL }}/visitor.html
             
-            ### Verification
-            - [ ] Health check passing
-            - [ ] Admin login works
-            - [ ] Visitor registration works
-            - [ ] Real-time chat functional
-            - [ ] Video clip injection works
-            - [ ] PWA install prompts
+            ### Quick Verification Checklist
+            - [ ] System health check responding normally
+            - [ ] Admin authentication successful
+            - [ ] Visitor registration operational
+            - [ ] Live chat streaming active
+            - [ ] Video clip injection functioning
+            - [ ] Progressive Web App assets cached
             
-            ### Rollback
-            If issues: `git revert <commit>` → pushes new tag → auto-deploy
+            ### Rollback Plan
+            If an issue occurs, execute: `git revert <commit>` and push a new tag to trigger an automated rollback release.
           draft: false
           prerelease: false
           generate_release_notes: true
 
-      - name: Notify deployment
+      - name: Send Deployment Notification Alert
         if: env.NOTIFY_WEBHOOK != ''
         run: |
           curl -X POST "${{ secrets.NOTIFY_WEBHOOK }}" \
             -H 'Content-Type: application/json' \
             -d '{
-              "text": "🚀 Reebow Platform ${{ github.ref_name }} deployed to production!",
+              "text": "Reebow Platform ${{ github.ref_name }} successfully deployed to production!",
               "username": "Deploy Bot",
               "attachments": [{
                 "color": "good",
                 "fields": [
                   {"title": "Version", "value": "${{ github.ref_name }}", "short": true},
-                  {"title": "Commit", "value": "${{ github.sha }}", "short": true},
-                  {"title": "Deployed by", "value": "${{ github.actor }}", "short": true},
+                  {"title": "Commit Hash", "value": "${{ github.sha }}", "short": true},
+                  {"title": "Triggered By", "value": "${{ github.actor }}", "short": true},
                   {"title": "Production URL", "value": "${{ secrets.PROD_URL }}", "short": false}
                 ]
               }]
             }'
 
   # ─────────────────────────────────────────────────────────────────────
-  # POST-DEPLOY VERIFICATION
+  # POST-DEPLOYMENT VERIFICATION
   # ─────────────────────────────────────────────────────────────────────
   post-deploy:
-    name: Post-Deploy Verification
+    name: Post-Deployment Verification Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [deploy-production]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     steps:
-      - name: Wait for CDN propagation
+      - name: Wait for Edge Network Propagation
         run: sleep 60
 
-      - name: Verify production endpoints
+      - name: Verify Live Endpoints Return 200 OK
         run: |
           PROD_URL="${{ secrets.PROD_URL }}"
-          
-          # Core endpoints
           endpoints=(
             "/health"
             "/api/version"
@@ -447,24 +440,22 @@ jobs:
           
           for ep in "${endpoints[@]}"; do
             if curl -fsS -o /dev/null -w "%{http_code}" "$PROD_URL$ep" | grep -q "^200$"; then
-              echo "✅ $ep"
+              echo "Endpoint verified: $ep"
             else
-              echo "❌ $ep failed"
+              echo "Endpoint verification failed: $ep"
               exit 1
             fi
           done
           
-          # Verify PWA
           if curl -fsS "$PROD_URL/manifest.json" | jq -e '.short_name == "Reebow"' >/dev/null; then
-            echo "✅ Manifest valid"
+            echo "Web app manifest verified successfully."
           else
-            echo "❌ Manifest invalid"
+            echo "Web app manifest validation failed."
             exit 1
           fi
 
-      - name: Run integration smoke test
+      - name: Run Live Integration Smoke Test
         run: |
-          # Simulate visitor registration
           VISITOR_EMAIL="ci-test-${{ github.run_id }}@reebow.test"
           
           REGISTER=$(curl -fsS -X POST "${{ secrets.PROD_URL }}/api/visitor/register" \
@@ -473,31 +464,22 @@ jobs:
             -c /tmp/ci-cookies.txt)
           
           if echo "$REGISTER" | jq -e '.success == true' >/dev/null; then
-            echo "✅ Visitor registration works"
+            echo "Visitor registration smoke test passed."
           else
-            echo "❌ Visitor registration failed"
+            echo "Visitor registration smoke test failed."
             exit 1
           fi
           
-          # Check Socket.io endpoint
           if curl -fsS "${{ secrets.PROD_URL }}/socket.io/socket.io.js" | grep -q "Socket"; then
-            echo "✅ Socket.io client served"
+            echo "Socket.io client bundle verified."
           else
-            echo "❌ Socket.io client failed"
+            echo "Socket.io client bundle verification failed."
             exit 1
           fi
 
-      - name: Report status
+      - name: Output Final Deployment Status
         run: |
-          echo "## ✅ Production Deployment Verified"
-          echo ""
-          echo "**Version:** ${{ github.ref_name }}"
-          echo "**Commit:** ${{ github.sha }}"
-          echo "**URL:** ${{ secrets.PROD_URL }}"
-          echo "**Time:** $(date -u)"
-          echo ""
-          echo "All verification checks passed! 🎉"
-
-# ════════════════════════════════════════════════════════════════════════
-# WORKFLOW END
-# ════════════════════════════════════════════════════════════════════════
+          echo "Production Deployment Verified Successfully!"
+          echo "Version: ${{ github.ref_name }}"
+          echo "Target URL: ${{ secrets.PROD_URL }}"
+          echo "All post-deployment checks passed."
