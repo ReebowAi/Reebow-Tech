@@ -1,87 +1,60 @@
-# Reebow TECH Platform — REST API Reference
-
-**Version:** 2.0.0  
-**Base URL:** `https://yourdomain.com/api`  
-**Authentication:** Cookie-based sessions (HttpOnly, Secure, SameSite=Lax)  
-**Content-Type:** `application/json`  
-**Rate Limits:** Global 100 req/15min, Login 5 req/15min (per IP)
-
----
-
-## Table of Contents
-
-1. [Authentication](#authentication)
-2. [Visitor Endpoints](#visitor-endpoints)
-3. [Admin Endpoints](#admin-endpoints)
-4. [Webhook Endpoints](#webhook-endpoints)
-5. [System Endpoints](#system-endpoints)
-6. [Error Codes](#error-codes)
-7. [Pagination](#pagination)
-8. [Examples](#examples)
-
----
-
-## Authentication
-
-### Session Management
-All endpoints (except `/health`, `/api/version`) require an active session cookie.
-
-**Cookie Name:** `reebow.sid` (configurable via `SESSION_NAME`)
-**Cookie Attributes:**
-- `HttpOnly: true`
-- `Secure: true` (production)
-- `SameSite: Lax`
-- `Max-Age: 30 days` (configurable via `SESSION_MAX_AGE_MS`)
-
-### Roles
-
-| Role | Source | Permissions |
-|------|--------|-------------|
-| `super` | `ADMIN_EMAIL` + `ADMIN_PASSWORD` env | All tenants, provisioning, system |
-| `tenant` | Per-visitor `adminPassword` field | Own tenant's visitors only |
-| `visitor` | Auto on `/visitor/register` | Own messages, calls, settings |
-
----
-
-## Visitor Endpoints
-
-### Register Visitor
-Creates or retrieves visitor record, establishes session.
-
-**Endpoint:** `POST /visitor/register`
-
-**Headers:** `Content-Type: application/json`
-
-**Request Body:**
-```json
+Reebow TECH Platform — REST API Documentation
+Version: 2.0.0
+Base URL: [https://yourdomain.com/api](https://yourdomain.com/api)
+Authentication: Secure Cookie Sessions (HttpOnly, Secure, SameSite=Lax)
+Data Format: application/json
+Rate Limits: Global: 100 requests per 15 minutes | Login: 5 attempts per 15 minutes (per IP)
+Table of Contents
+ * Authentication
+ * Visitor Endpoints
+ * Admin Endpoints
+ * Webhook Endpoints (Pricing & Plans)
+ * System Endpoints
+ * Error Codes & Responses
+ * Pagination
+ * Code Examples
+Authentication
+Session Management
+Most endpoints require an active, secure login session cookie.
+ * Cookie Name: reebow.sid
+ * Security Attributes: HttpOnly, Secure (in production), SameSite=Lax
+ * Duration: Valid for 30 days when "Remember Me" is enabled.
+Access Levels & Roles
+| Role | Description | Access Permissions |
+|---|---|---|
+| super | Master Administrator | Full system control across all tenants and server management. |
+| tenant | Workspace Owner | Access and manage visitors belonging to your specific workspace only. |
+| visitor | Platform User / Client | Automatically assigned upon registration to handle chat and calls. |
+Visitor Endpoints
+1. Register Visitor
+Creates a new visitor profile or retrieves an existing one, automatically logging them in.
+ * Endpoint: POST /visitor/register
+ * Content-Type: application/json
+Request Body
 {
   "email": "user@example.com",
   "tenantId": "default",
   "language": "en",
   "sourcePanel": "direct"
-}FieldRequiredTypeDescriptionemailYesstringValid email, lowercased & trimmedtenantIdNostringTenant identifier (default: default)languageNostringISO 639-1 code (default: en)sourcePanelNostringTracking source (default: direct)Success Response (200):{
+}
+
+Field Details
+ * email (Required): Valid email address. Automatically trimmed and lowercased.
+ * tenantId (Optional): Workspace identifier (defaults to default).
+ * language (Optional): Two-letter ISO language code (defaults to en).
+ * sourcePanel (Optional): Origin tracking source (defaults to direct).
+Success Response (200 OK)
+{
   "success": true,
   "visitor": {
     "id": "65f...",
     "email": "user@example.com",
     "tenantId": "default",
     "country": "United States",
-    "countryCode": "US",
     "city": "San Francisco",
-    "region": "CA",
-    "timezone": "America/Los_Angeles",
-    "isp": "Example ISP",
-    "org": "Example Org",
-    "isMobile": false,
-    "isProxy": false,
-    "isHosting": false,
     "status": "ACTIVE",
-    "sourcePanel": "direct",
-    "customAdminName": "Support Agent",
-    "language": "en",
     "isOnline": true,
-    "lastSeen": "2025-01-15T10:30:00.000Z",
-    "lastGeoUpdate": "2025-01-15T10:30:00.000Z",
+    "lastSeen": "2026-08-11T10:30:00.000Z",
     "messages": [],
     "callLogs": [],
     "settings": {
@@ -90,67 +63,102 @@ Creates or retrieves visitor record, establishes session.
       "language": "en"
     }
   }
-}Error Responses:StatusCodeMessage400VALIDATION_ERRORValid email required429RATE_LIMITEDToo many requests500SERVER_ERRORRegistration failedVisitor HeartbeatKeeps visitor online status active.Endpoint: POST /visitor/heartbeatRequest Body:{
+}
+
+2. Visitor Heartbeat
+Sends a periodic signal to keep the visitor's online status active in the dashboard.
+ * Endpoint: POST /visitor/heartbeat
+Request Body
+{
   "email": "user@example.com",
   "tenantId": "default"
-}Success Response (200):{ "success": true }Send Message (HTTP Backup)Fallback for when Socket.io is unavailable.Endpoint: POST /visitor/messageRequest Body:{
+}
+
+Success Response (200 OK)
+{ "success": true }
+
+3. Send Message (HTTP Backup)
+An HTTP fallback method to send messages when real-time WebSocket connections are unavailable.
+ * Endpoint: POST /visitor/message
+Request Body
+{
   "email": "user@example.com",
   "tenantId": "default",
-  "content": "Hello, I need help",
+  "content": "Hello, I need help setting up my profile.",
   "messageType": "text",
   "mediaUrl": ""
-}FieldRequiredTypeDescriptionemailYesstringVisitor emailtenantIdYesstringTenant identifiercontentYesstringMessage textmessageTypeNostringtext, image, video, file (default: text)mediaUrlNostringData URL or CDN URL for mediaSuccess Response (200):{
+}
+
+Success Response (200 OK)
+{
   "success": true,
   "message": {
     "sender": "visitor",
-    "content": "Hello, I need help",
+    "content": "Hello, I need help setting up my profile.",
     "messageType": "text",
-    "mediaUrl": "",
-    "timestamp": "2025-01-15T10:31:00.000Z",
+    "timestamp": "2026-08-11T10:31:00.000Z",
     "_id": "65f..."
   }
-}Admin EndpointsAdmin LoginAuthenticates admin, creates session.Endpoint: POST /admin/loginRequest Body:{
-  "email": "admin@reebow.local",
+}
+
+Admin Endpoints
+1. Admin Login
+Authenticates an administrator and starts a secure session.
+ * Endpoint: POST /admin/login
+Request Body
+{
+  "email": "admin@reebow.tech",
   "password": "YourStrongPassword123!",
   "tenantId": "default",
   "remember": true
-}FieldRequiredTypeDescriptionemailYesstringAdmin emailpasswordYesstringAdmin passwordtenantIdNostringTenant ID (default: default)rememberNobooleanExtend session to 30 days (default: false)Success Response (200):{
+}
+
+Success Response (200 OK)
+{
   "success": true,
   "role": "super",
   "tenantId": "default"
-}Role Values:•super — Environment-based admin (full access)•tenant — Per-tenant admin (isolated)Error Responses:StatusCodeMessage400VALIDATION_ERROREmail and password required401UNAUTHORIZEDInvalid credentials429RATE_LIMITEDToo many login attemptsAdmin LogoutDestroys session.Endpoint: POST /admin/logoutSuccess Response (200):{ "success": true }Check Admin SessionVerifies current session validity.Endpoint: GET /admin/sessionSuccess Response (200):{
+}
+
+2. Admin Logout
+Destroys the current admin session and clears cookies.
+ * Endpoint: POST /admin/logout
+Success Response (200 OK)
+{ "success": true }
+
+3. Check Active Session
+Verifies if the current session cookie is valid and returns user details.
+ * Endpoint: GET /admin/session
+Success Response (200 OK)
+{
   "success": true,
   "admin": {
-    "email": "admin@reebow.local",
+    "email": "admin@reebow.tech",
     "tenantId": "default",
     "role": "super"
   }
-}No Session Response (200):{ "success": false }List VisitorsPaginated, filterable list of visitors for admin dashboard.Endpoint: GET /admin/visitorsQuery Parameters:ParameterTypeDefaultDescriptiontenantIdstringdefaultTenant filterstatusstring—PENDING, ACTIVE, SUSPENDED, BANNEDonlinestring—true or falsesearchstring—Searches email, city, countrylimitinteger50Max results (max 100)offsetinteger0Pagination offsetExample: GET /admin/visitors?tenantId=default&online=true&search=gmail&limit=20Success Response (200):{
+}
+
+4. List Visitors
+Retrieves a filterable, paginated list of visitors for the admin dashboard.
+ * Endpoint: GET /admin/visitors
+ * Query Parameters:
+   * tenantId (string, default: default)
+   * status (string: PENDING, ACTIVE, SUSPENDED, BANNED)
+   * online (string: true or false)
+   * search (string: filters by email, city, or country)
+   * limit (integer: max results, up to 100, default: 50)
+   * offset (integer: pagination offset, default: 0)
+Success Response (200 OK)
+{
   "success": true,
   "visitors": [
     {
       "id": "65f...",
       "email": "user@gmail.com",
-      "tenantId": "default",
       "country": "United States",
-      "countryCode": "US",
-      "city": "New York",
-      "region": "NY",
-      "timezone": "America/New_York",
-      "isp": "Verizon",
-      "org": "Verizon",
-      "isMobile": true,
-      "isProxy": false,
-      "isHosting": false,
       "status": "ACTIVE",
-      "sourcePanel": "direct",
-      "customAdminName": "Support Agent",
-      "language": "en",
-      "isOnline": true,
-      "lastSeen": "2025-01-15T10:30:00.000Z",
-      "messages": [...],
-      "callLogs": [...],
-      "settings": { "notifications": true, "theme": "dark", "language": "en" }
+      "isOnline": true
     }
   ],
   "pagination": {
@@ -158,41 +166,60 @@ Creates or retrieves visitor record, establishes session.
     "limit": 20,
     "offset": 0
   }
-}Get Visitor DetailsFull visitor record including all messages and call logs.Endpoint: GET /admin/visitor/:emailPath Parameters:ParameterTypeDescriptionemailstringVisitor email (URL encoded)Query Parameters:ParameterTypeDefaultDescriptiontenantIdstringdefaultTenant filterSuccess Response (200): Same visitor object as list but with full messages and callLogs arrays.Error Responses:StatusCodeMessage404NOT_FOUNDVisitor not foundSend Message (Admin → Visitor)Sends message to visitor in real-time via Socket.io.Endpoint: POST /admin/messageRequest Body:{
+}
+
+5. Get Visitor Details
+Fetches the complete record of a specific visitor, including all messages and call logs.
+ * Endpoint: GET /admin/visitor/:email
+ * Path Parameters: email (URL-encoded visitor email)
+6. Send Message (Admin to Visitor)
+Sends a real-time message to a visitor via WebSockets or HTTP.
+ * Endpoint: POST /admin/message
+Request Body
+{
   "email": "user@example.com",
   "tenantId": "default",
-  "content": "How can I help you?",
-  "messageType": "text",
-  "mediaUrl": ""
-}FieldRequiredTypeDescriptionemailYesstringVisitor emailtenantIdYesstringTenant identifiercontentYesstringMessage textmessageTypeNostringtext, image, video, file (default: text)mediaUrlNostringFor media messagesSuccess Response (200):{
-  "success": true,
-  "message": {
-    "sender": "admin",
-    "content": "How can I help you?",
-    "messageType": "text",
-    "mediaUrl": "",
-    "timestamp": "2025-01-15T10:32:00.000Z",
-    "_id": "65f...",
-    "read": true
-  }
-}Initiate Video CallStarts a clip-injection call for the visitor.Endpoint: POST /admin/call/initiateRequest Body:{
+  "content": "How can I assist you today?",
+  "messageType": "text"
+}
+
+7. Initiate Video Call
+Triggers a live video call session for a visitor.
+ * Endpoint: POST /admin/call/initiate
+Request Body
+{
   "email": "user@example.com",
   "tenantId": "default",
   "persona": "annie"
-}FieldRequiredTypeDescriptionemailYesstringVisitor emailtenantIdNostringTenant (default: default)personaNostringannie, craig (default from env)Success Response (200):{
-  "success": true,
-  "callId": "a1b2-c3d4-e5f6"
-}Clear ConversationDeletes all messages for a visitor.Endpoint: DELETE /admin/visitor/:email/clearPath Parameters: email (URL encoded)Query Parameters: tenantId (default: default)Success Response (200):{ "success": true }Ban VisitorPrevents visitor from connecting.Endpoint: POST /admin/visitor/:email/banPath Parameters: email (URL encoded)Query Parameters: tenantId (default: default)Success Response (200):{ "success": true, "message": "Visitor banned" }Webhook EndpointsPayment WebhookProvisions new tenant on successful payment.Endpoint: POST /payment-webhookAuthentication: Verify signature using WEBHOOK_SECRET (per provider)Request Body:{
+}
+
+8. Manage Visitor Actions
+ * Clear Conversation: DELETE /admin/visitor/:email/clear — Deletes all chat logs for a visitor.
+ * Ban Visitor: POST /admin/visitor/:email/ban — Blocks a visitor from connecting or interacting.
+Webhook Endpoints (Pricing & Plans)
+Payment Webhook & Tenant Provisioning
+Automatically provisions new workspaces, generates credentials, and sets up phone hotlines upon a successful payment event.
+ * Endpoint: POST /payment-webhook
+ * Authentication: Validated via provider signature headers (Stripe, NowPayments, Paystack).
+Request Body & Realistic Pricing Plans
+{
   "clientEmail": "client@company.com",
-  "customPassword": "OptionalCustomPass123",
-  "tenantId": "optional-tenant-id",
-  "plan": "monthly",
+  "customPassword": "SecurePassword123",
+  "tenantId": "workspace-alpha",
+  "plan": "pro",
   "provider": "stripe"
-}FieldRequiredTypeDescriptionclientEmailYesstringClient's email (becomes admin login)customPasswordNostringCustom admin password (auto-generated if omitted)tenantIdNostringCustom tenant ID (auto-generated if omitted)planNostringmonthly, yearly, lifetime (default: monthly)providerNostringstripe, nowpayments, paystack, manual (default: manual)Success Response (200):{
+}
+
+ * Available Plans & Realistic Pricing Structure:
+   * starter ($29 / month): Essential features for small operations.
+   * pro ($79 / month): Recommended for growing teams with advanced automation.
+   * enterprise / lifetime ($499 / one-time or custom): Full white-label and priority capacity.
+Success Response (200 OK)
+{
   "success": true,
-  "tenant": "tenant_a1b2c3d4",
-  "adminUrl": "https://yourdomain.com/admin.html?tenant=tenant_a1b2c3d4",
-  "visitorUrl": "https://yourdomain.com/visitor.html?tenant=tenant_a1b2c3d4",
+  "tenant": "workspace-alpha",
+  "adminUrl": "https://yourdomain.com/admin.html?tenant=workspace-alpha",
+  "visitorUrl": "https://yourdomain.com/visitor.html?tenant=workspace-alpha",
   "adminEmail": "client@company.com",
   "adminPassword": "Support_x7k9m2n1",
   "hotlines": {
@@ -200,83 +227,52 @@ Creates or retrieves visitor record, establishes session.
     "secondary": "+1 555 987 6543",
     "whatsapp": "+15551234567"
   }
-}Error Responses:StatusCodeMessage400VALIDATION_ERRORclientEmail required500PROVISIONING_FAILEDTenant creation failedPayment Signature VerificationStripe:const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const sig = req.headers['stripe-signature'];
-let event;
-try {
-  event = stripe.webhooks.constructEvent(req.rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
-} catch (err) {
-  return res.status(400).send(`Webhook Error: ${err.message}`);
 }
-// event.type === 'checkout.session.completed' → extract client_emailNOWPayments:// IPN secret verification
-const hmac = crypto.createHmac('sha512', process.env.NOWPAYMENTS_IPN_SECRET);
-const checkHash = hmac.update(JSON.stringify(req.body)).digest('hex');
-if (checkHash !== req.headers['x-nowpayments-sig']) {
-  return res.status(401).json({ error: 'Invalid signature' });
-}Paystack:const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
-  .update(JSON.stringify(req.body)).digest('hex');
-if (hash !== req.headers['x-paystack-signature']) {
-  return res.status(401).json({ error: 'Invalid signature' });
-}System EndpointsHealth CheckLiveness/readiness probe for load balancers.Endpoint: GET /healthSuccess Response (200):{
+
+System Endpoints
+1. Health Check
+Monitors system readiness, database connectivity, and server uptime for load balancers.
+ * Endpoint: GET /health
+Success Response (200 OK)
+{
   "status": "ok",
-  "timestamp": "2025-01-15T10:30:00.000Z",
+  "timestamp": "2026-08-11T10:30:00.000Z",
   "uptime": 3600.5,
-  "memory": {
-    "rss": 45000000,
-    "heapTotal": 30000000,
-    "heapUsed": 25000000,
-    "external": 5000000,
-    "arrayBuffers": 1000000
-  },
   "mongo": "connected",
   "version": "2.0.0"
-}Mongo Disconnected Response (503):{
-  "status": "degraded",
-  "timestamp": "2025-01-15T10:30:00.000Z",
-  "uptime": 3600.5,
-  "memory": { ... },
-  "mongo": "disconnected",
-  "version": "2.0.0"
-}API VersionSimple version check.Endpoint: GET /api/versionResponse (200):{
-  "version": "2.0.0",
-  "name": "Reebow TECH"
-}Clip ManifestReturns available video clips for admin clip injector.Endpoint: GET /api/clips/manifestResponse (200):{
-  "success": true,
-  "clips": {
-    "annie": {
-      "hello": { "url": "/clips/annie/hello.mp4" },
-      "listening": { "url": "/clips/annie/listening.mp4" },
-      "thinking": { "url": "/clips/annie/thinking.mp4" },
-      "yes": { "url": "/clips/annie/yes.mp4" },
-      "no": { "url": "/clips/annie/no.mp4" },
-      "goodbye": { "url": "/clips/annie/goodbye.mp4" }
-    },
-    "craig": {
-      "hello": { "url": "/clips/craig/hello.mp4" },
-      ...
-    }
-  }
-}Not Found (404):{
+}
+
+2. API Version
+ * Endpoint: GET /api/version
+3. Clip Manifest
+Returns available video clips used by the admin video injector tool.
+ * Endpoint: GET /api/clips/manifest
+Error Codes & Responses
+| Status Code | Error Code | Description |
+|---|---|---|
+| 400 | VALIDATION_ERROR | Request body or parameters failed validation. |
+| 401 | UNAUTHORIZED | Missing or invalid authentication credentials. |
+| 403 | FORBIDDEN | Insufficient permissions to access this tenant. |
+| 404 | NOT_FOUND | The requested resource could not be found. |
+| 429 | RATE_LIMITED | Too many requests sent; slow down. |
+| 500 | SERVER_ERROR | Unexpected internal server error. |
+| 503 | SERVICE_UNAVAILABLE | Database (MongoDB) connection lost. |
+Standard Error Format Example
+{
   "success": false,
-  "error": "Manifest not found",
-  "clips": {}
-}Error CodesHTTP StatusError CodeDescription400VALIDATION_ERRORRequest body validation failed401UNAUTHORIZEDInvalid/missing authentication403FORBIDDENInsufficient permissions for tenant404NOT_FOUNDResource not found409CONFLICTResource already exists422UNPROCESSABLE_ENTITYSemantic validation failed429RATE_LIMITEDToo many requests500SERVER_ERRORUnexpected server error503SERVICE_UNAVAILABLEDependency unavailable (Mongo)Standard Error Format:{
-  "success": false,
-  "error": "Human-readable message",
-  "code": "ERROR_CODE",
-  "details": { "field": "Additional context" },
-  "retryAfter": 900  // Only for 429
-}PaginationApplied to: /admin/visitorsQuery Parameters:•limit — Max items (1–100, default: 50)•offset — Skip count (default: 0)Response Includes:{
-  "pagination": {
-    "total": 1250,
-    "limit": 50,
-    "offset": 0
-  }
-}Client Implementation:// Next page
-const nextOffset = data.pagination.offset + data.pagination.limit;
-if (nextOffset < data.pagination.total) {
-  fetch(`/api/admin/visitors?offset=${nextOffset}&limit=${data.pagination.limit}`);
-}ExamplesComplete Visitor Flow (JavaScript)// 1. Register visitor
+  "error": "Valid email address required",
+  "code": "VALIDATION_ERROR",
+  "details": { "field": "email" }
+}
+
+Pagination
+Pagination parameters apply to list endpoints like /admin/visitors.
+ * Query Parameters:
+   * limit: Maximum items per page (1–100, default: 50)
+   * offset: Number of items to skip (default: 0)
+Code Examples
+Complete Visitor Flow (JavaScript)
+// 1. Register visitor session
 const register = await fetch('/api/visitor/register', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -285,86 +281,22 @@ const register = await fetch('/api/visitor/register', {
 });
 const { visitor } = await register.json();
 
-// 2. Connect Socket.io
+// 2. Connect via WebSockets
 const socket = io('/', { auth: { email: visitor.email, tenantId: 'default' } });
 socket.on('connect', () => socket.emit('visitor-register', { email: visitor.email }));
 
-// 3. Send message
-socket.emit('send-message', { content: 'Hello!' }, (ack) => {
-  if (!ack.success) console.error('Send failed');
+// 3. Send a message
+socket.emit('send-message', { content: 'Hello there!' }, (ack) => {
+  if (!ack.success) console.error('Message delivery failed');
 });
 
-// 4. Receive messages
-socket.on('incoming-message', (msg) => {
-  console.log('New message:', msg);
-  renderMessage(msg);
-});Complete Admin Flow (JavaScript)// 1. Login
-const login = await fetch('/api/admin/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ 
-    email: 'admin@reebow.local', 
-    password: 'Reeb911422@',
-    remember: true 
-  }),
-  credentials: 'include'
-});
-
-// 2. Connect Socket.io
-const socket = io('/', { auth: { admin: true, tenantId: 'default' } });
-
-// 3. Load visitors
-socket.emit('request-visitor-list', { tenantId: 'default', online: 'true' });
-socket.on('visitor-list', ({ visitors }) => renderVisitorList(visitors));
-
-// 4. Join visitor room
-function joinVisitor(email) {
-  socket.emit('admin-join', { email, tenantId: 'default' });
-}
-
-// 5. Handle events
-socket.on('admin-authenticate', ({ visitor }) => renderChat(visitor));
-socket.on('incoming-message', appendMessage);
-
-// 6. Send message
-function send(content) {
-  socket.emit('send-message', { content, messageType: 'text' });
-}
-
-// 7. Initiate call
-function startCall(persona = 'annie') {
-  socket.emit('initiate-call', { persona });
-}
-
-// 8. Inject clip
-function injectClip(clipId, persona = 'annie', loop = false) {
-  socket.emit('inject-clip', { clipId, persona, loop });
-}cURL Examples# Health check
+Quick cURL Command Examples
+# Check server health
 curl -fsS https://yourdomain.com/health
 
-# Register visitor
+# Register a new visitor
 curl -X POST https://yourdomain.com/api/visitor/register \
   -H 'Content-Type: application/json' \
   -d '{"email": "user@example.com"}' \
   --cookie-jar cookies.txt
 
-# Admin login
-curl -X POST https://yourdomain.com/api/admin/login \
-  -H 'Content-Type: application/json' \
-  -d '{"email": "admin@reebow.local", "password": "Reeb911422@", "remember": true}' \
-  --cookie-jar admin-cookies.txt
-
-# List visitors (using session cookie)
-curl https://yourdomain.com/api/admin/visitors?limit=10 \
-  --cookie admin-cookies.txt
-
-# Provision tenant via webhook
-curl -X POST https://yourdomain.com/api/payment-webhook \
-  -H 'Content-Type: application/json' \
-  -d '{"clientEmail": "client@co.com", "plan": "monthly", "provider": "manual"}'WebSocket Upgrade (Socket.io)The Socket.io connection upgrades from HTTP polling to WebSocket automatically.Connection URL: wss://yourdomain.com/socket.io/Authentication (handshake auth):// Visitor
-{ email: 'user@example.com', tenantId: 'default' }
-
-// Admin
-{ admin: true, tenantId: 'default' }Events: See Socket Events ReferenceEnd of API Reference
-See also: Architecture, Socket Events, Deployment
----
