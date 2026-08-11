@@ -112,7 +112,7 @@ cleanup_mongodb() {
     local msg_result=$(mongo_exec "
         db.visitors.updateMany(
             {},
-            { \\\$pull: { messages: { timestamp: { \\\$lt: new Date('$msg_cutoff') } } } }
+            { \$pull: { messages: { timestamp: { \$lt: new Date('$msg_cutoff') } } } }
         ).modifiedCount
     ")
     log_info "Pruned messages older than $RETENTION_DAYS_MESSAGES days: $msg_result modified"
@@ -122,7 +122,7 @@ cleanup_mongodb() {
     local call_result=$(mongo_exec "
         db.visitors.updateMany(
             {},
-            { \\\$pull: { callLogs: { timestamp: { \\\$lt: new Date('$call_cutoff') } } } }
+            { \$pull: { callLogs: { timestamp: { \$lt: new Date('$call_cutoff') } } } }
         ).modifiedCount
     ")
     log_info "Pruned call logs older than $RETENTION_DAYS_CALLS days: $call_result modified"
@@ -131,8 +131,8 @@ cleanup_mongodb() {
     local stale_cutoff=$(date -d "-10 minutes" --iso-8601=seconds 2>/dev/null || date -v-10M --iso-8601=seconds)
     local stale_result=$(mongo_exec "
         db.visitors.updateMany(
-            { isOnline: true, lastSeen: { \\\$lt: new Date('$stale_cutoff') } },
-            { \\\$set: { isOnline: false } }
+            { isOnline: true, lastSeen: { \$lt: new Date('$stale_cutoff') } },
+            { \$set: { isOnline: false } }
         ).modifiedCount
     ")
     log_info "Marked stale visitors offline: $stale_result modified"
