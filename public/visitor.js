@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════════════
 // REEBOW TECH — VISITOR CLIENT (Telegram-Style)
-// Version: 2.0.0 | ES Modules | Socket.io | Offline Queue | PWA Ready
+// Version: 2.2.0 | ES Modules | Socket.io | Offline Queue | PWA Ready
 // ════════════════════════════════════════════════════════════════════════
 
 import { io } from '/socket.io/socket.io.js';
@@ -62,74 +62,49 @@ const state = {
 };
 
 // ────────────────────────────────────────────────────────────────────────
-// DOM ELEMENTS
+// DOM ELEMENTS (Mapped precisely to visitor.html)
 // ────────────────────────────────────────────────────────────────────────
 const els = {};
 
 const cacheElements = () => {
-  // Layout
+  // Registration
+  els.visitorModal = document.getElementById('visitorModal');
+  els.visitorForm = document.getElementById('visitorForm');
+  els.visitorEmailInput = document.getElementById('visitorEmailInput');
+  els.visitorAppContainer = document.getElementById('visitorAppContainer');
+
+  // Layout & Tabs
   els.visitorTabs = document.querySelector('.visitor-tabs');
   els.tabPanels = document.querySelectorAll('.tab-panel');
-  els.messagesContainer = document.getElementById('messagesContainer');
-  els.welcomeMessage = document.getElementById('welcomeMessage');
-  els.typingIndicator = document.getElementById('typingIndicator');
-  els.messageInput = document.getElementById('messageInput');
+  els.chatBox = document.getElementById('chatBox');
+  els.typingStatus = document.getElementById('typingStatus');
+  els.msgInput = document.getElementById('msgInput');
   els.sendBtn = document.getElementById('sendBtn');
-  els.attachBtn = document.getElementById('attachBtn');
+  els.btnAttach = document.getElementById('btnAttach');
   
-  // Call
-  els.callOverlay = document.getElementById('callOverlay');
-  els.callVideo = document.getElementById('callVideo');
-  els.callVideoOverlay = document.getElementById('callVideoOverlay');
-  els.callConnecting = document.getElementById('callConnecting');
+  // Call Overlay & Video
+  els.videoOverlay = document.getElementById('videoOverlay');
+  els.remoteVideo = document.getElementById('remoteVideo');
   els.callStatusText = document.getElementById('callStatusText');
-  els.callConnectingDetail = document.getElementById('callConnectingDetail');
-  els.callAgentName = document.getElementById('callAgentName');
-  els.callAvatar = document.getElementById('callAvatar');
-  els.callControls = document.querySelector('.call-controls');
-  els.toggleMute = document.getElementById('toggleMute');
-  els.endCall = document.getElementById('endCall');
-  els.minimizeCall = document.getElementById('minimizeCall');
-  els.declineCall = document.getElementById('declineCall');
+  els.callTimer = document.getElementById('callTimer');
+  els.btnAcceptCall = document.getElementById('btnAcceptCall');
+  els.btnEndCall = document.getElementById('btnEndCall');
   
-  // Incoming call banner
-  els.incomingCallBanner = document.getElementById('incomingCallBanner');
-  els.incomingAgentName = document.getElementById('incomingAgentName');
-  els.incomingAvatar = document.getElementById('incomingAvatar');
-  els.acceptCall = document.getElementById('acceptCall');
-  els.declineCallBanner = document.getElementById('declineCallBanner');
-  
-  // Call history
-  els.callHistoryList = document.getElementById('callHistoryList');
+  // Incoming Call Banner / Calls Tab
+  els.callHistory = document.getElementById('callHistory');
   
   // Settings
-  els.notifySound = document.getElementById('notifySound');
-  els.notifyDesktop = document.getElementById('notifyDesktop');
-  els.notifyVibrate = document.getElementById('notifyVibrate');
-  els.languageSelect = document.getElementById('languageSelect');
-  els.timezoneSelect = document.getElementById('timezoneSelect');
-  els.themeSelect = document.getElementById('themeSelect');
-  els.reduceMotion = document.getElementById('reduceMotion');
-  els.exportData = document.getElementById('exportData');
-  els.clearData = document.getElementById('clearData');
-  els.appVersion = document.getElementById('appVersion');
-  els.buildDate = document.getElementById('buildDate');
+  els.sndToggle = document.getElementById('sndToggle');
+  els.themeToggle = document.getElementById('themeToggle');
+  els.btnExport = document.getElementById('btnExport');
+  els.btnClear = document.getElementById('btnClear');
   
-  // Status
-  els.connStatus = document.getElementById('connStatus');
+  // Status & Badges
   els.offlineBanner = document.getElementById('offlineBanner');
-  els.unreadBadge = document.getElementById('unreadBadge');
+  els.connectionStatusText = document.getElementById('connectionStatusText');
+  els.chatBadge = document.getElementById('chatBadge');
   
-  // Modals
-  els.imageModal = document.getElementById('imageModal');
-  els.modalImage = document.getElementById('modalImage');
-  
-  // PWA
-  els.pwaBanner = document.getElementById('pwaBanner');
-  els.pwaInstall = document.getElementById('pwaInstall');
-  els.pwaDismiss = document.getElementById('pwaDismiss');
-  
-  // Toast container
+  // Modals & Toasts
   els.toastContainer = document.getElementById('toastContainer');
 };
 
@@ -141,20 +116,21 @@ const formatDate = (date) => new Date(date).toLocaleDateString([], { month: 'sho
 const formatDuration = (seconds) => {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
-const escapeHtml = (str) => str.replace(/[&<>"']/g, c => ({ '&': '&', '', '>', '"': '"', "'": ''' }[c]));
+const escapeHtml = (str) => String(str || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const generateId = () => Math.random().toString(36).slice(2, 10);
-const getInitials = (email) => email.slice(0, 2).toUpperCase();
 
 const toast = (message, type = 'info') => {
+  if (!els.toastContainer) return;
   const el = document.createElement('div');
   el.className = `toast ${type}`;
-  el.innerHTML = `${escapeHtml(message)}&times;`;
-  el.querySelector('.toast-close').onclick = () => el.remove();
+  el.innerHTML = `<span>${escapeHtml(message)}</span>`;
   els.toastContainer.append(el);
-  requestAnimationFrame(() => el.classList.add('show'));
-  setTimeout(() => el.remove(), 5000);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300);
+  }, 4000);
 };
 
 const playSound = (type) => {
@@ -166,7 +142,6 @@ const playSound = (type) => {
     osc.connect(gain).connect(ctx.destination);
     if (type === 'message') { osc.frequency.value = 880; osc.type = 'sine'; gain.gain.value = 0.1; osc.start(); osc.stop(ctx.currentTime + 0.15); }
     if (type === 'call') { osc.frequency.value = 440; osc.type = 'triangle'; gain.gain.value = 0.15; osc.start(); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1); osc.stop(ctx.currentTime + 1); }
-    if (type === 'notification') { osc.frequency.value = 660; osc.type = 'sine'; gain.gain.value = 0.1; osc.start(); osc.stop(ctx.currentTime + 0.1); }
   } catch (e) { /* ignore audio errors */ }
 };
 
@@ -177,14 +152,7 @@ const vibrate = (pattern) => {
 
 const notify = (title, options = {}) => {
   if (!state.settings.notifyDesktop || Notification.permission !== 'granted') return;
-  const n = new Notification(title, { 
-    icon: '/icon-192.png', 
-    badge: '/badge-72.png', 
-    tag: 'reebow-visitor',
-    vibrate: state.settings.notifyVibrate ? [200, 100, 200] : undefined,
-    ...options 
-  });
-  n.onclick = () => window.focus();
+  new Notification(title, { icon: '/icon-192.png', ...options });
 };
 
 const requestNotificationPermission = () => {
@@ -200,16 +168,6 @@ const loadSettings = () => {
     state.settings = { ...state.settings, ...JSON.parse(saved) };
     applySettings();
   }
-  // Populate timezone select
-  if (els.timezoneSelect) {
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      els.timezoneSelect.innerHTML = `Auto-detect (${tz})` +
-        ['UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Tokyo', 'Asia/Shanghai', 'Australia/Sydney']
-        .map(z => `${z}`).join('');
-      els.timezoneSelect.value = state.settings.timezone;
-    } catch (e) { /* ignore */ }
-  }
 };
 
 const saveSettings = () => {
@@ -219,34 +177,23 @@ const saveSettings = () => {
 
 const applySettings = () => {
   const s = state.settings;
-  // Theme
-  document.documentElement.setAttribute('data-theme', s.theme);
-  // Language
-  document.documentElement.lang = s.language;
-  // Reduced motion
-  if (s.reduceMotion) document.body.classList.add('reduce-motion');
-  else document.body.classList.remove('reduce-motion');
-  // Update UI
-  els.notifySound?.checked = s.notifySound;
-  els.notifyDesktop?.checked = s.notifyDesktop;
-  els.notifyVibrate?.checked = s.notifyVibrate;
-  els.languageSelect?.value = s.language;
-  els.timezoneSelect?.value = s.timezone;
-  els.themeSelect?.value = s.theme;
-  els.reduceMotion?.checked = s.reduceMotion;
+  if (els.sndToggle) els.sndToggle.checked = s.notifySound;
+  if (els.themeToggle) els.themeToggle.checked = s.theme !== 'light';
   requestNotificationPermission();
 };
 
 const bindSettings = () => {
-  els.notifySound?.onchange = () => { state.settings.notifySound = els.notifySound.checked; saveSettings(); };
-  els.notifyDesktop?.onchange = () => { state.settings.notifyDesktop = els.notifyDesktop.checked; saveSettings(); if (els.notifyDesktop.checked) requestNotificationPermission(); };
-  els.notifyVibrate?.onchange = () => { state.settings.notifyVibrate = els.notifyVibrate.checked; saveSettings(); };
-  els.languageSelect?.onchange = () => { state.settings.language = els.languageSelect.value; saveSettings(); };
-  els.timezoneSelect?.onchange = () => { state.settings.timezone = els.timezoneSelect.value; saveSettings(); };
-  els.themeSelect?.onchange = () => { state.settings.theme = els.themeSelect.value; saveSettings(); };
-  els.reduceMotion?.onchange = () => { state.settings.reduceMotion = els.reduceMotion.checked; saveSettings(); };
-  els.exportData?.onclick = exportData;
-  els.clearData?.onclick = clearLocalData;
+  if (els.sndToggle) {
+    els.sndToggle.onchange = () => { state.settings.notifySound = els.sndToggle.checked; saveSettings(); };
+  }
+  if (els.themeToggle) {
+    els.themeToggle.onchange = () => { 
+      state.settings.theme = els.themeToggle.checked ? 'dark' : 'light'; 
+      saveSettings(); 
+    };
+  }
+  if (els.btnExport) els.btnExport.onclick = exportData;
+  if (els.btnClear) els.btnClear.onclick = clearLocalData;
 };
 
 const exportData = () => {
@@ -263,13 +210,13 @@ const exportData = () => {
   a.download = `reebow-data-${Date.now()}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  toast('Data exported', 'success');
+  toast('Data exported successfully', 'success');
 };
 
 const clearLocalData = () => {
   if (!confirm('Clear all local data? This cannot be undone.')) return;
   localStorage.removeItem('reebow-visitor-settings');
-  localStorage.removeItem('reebow-visitor-email');
+  localStorage.removeItem('visitorEmail');
   sessionStorage.clear();
   toast('Data cleared. Reloading...', 'success');
   setTimeout(() => location.reload(), 1000);
@@ -294,101 +241,90 @@ const openQueueDB = () => new Promise((resolve, reject) => {
 });
 
 const queueMessage = async (message) => {
-  const db = await openQueueDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(QUEUE_STORE, 'readwrite');
-    const store = tx.objectStore(QUEUE_STORE);
-    const req = store.add({ ...message, timestamp: Date.now() });
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+  try {
+    const db = await openQueueDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUEUE_STORE, 'readwrite');
+      const store = tx.objectStore(QUEUE_STORE);
+      const req = store.add({ ...message, timestamp: Date.now() });
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { console.error('Queue db error', e); }
 };
 
 const getQueuedMessages = async () => {
-  const db = await openQueueDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(QUEUE_STORE, 'readonly');
-    const store = tx.objectStore(QUEUE_STORE);
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+  try {
+    const db = await openQueueDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUEUE_STORE, 'readonly');
+      const store = tx.objectStore(QUEUE_STORE);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { return []; }
 };
 
 const deleteQueuedMessage = async (id) => {
-  const db = await openQueueDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(QUEUE_STORE, 'readwrite');
-    const store = tx.objectStore(QUEUE_STORE);
-    const req = store.delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  try {
+    const db = await openQueueDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUEUE_STORE, 'readwrite');
+      const store = tx.objectStore(QUEUE_STORE);
+      const req = store.delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { }
 };
 
 const flushOfflineQueue = async () => {
   const queued = await getQueuedMessages();
-  if (!queued.length) return;
-  
+  if (!queued || !queued.length) return;
   for (const msg of queued) {
-    try {
-      if (state.socket?.connected) {
-        state.socket.emit('send-message', msg, async (ack) => {
-          if (ack?.success) await deleteQueuedMessage(msg.id);
-        });
-      }
-    } catch (e) { console.error('Queue flush error', e); break; }
+    if (state.socket?.connected) {
+      state.socket.emit('send-message', msg, async (ack) => {
+        if (ack?.success) await deleteQueuedMessage(msg.id);
+      });
+    }
   }
 };
 
 // ────────────────────────────────────────────────────────────────────────
 // REGISTRATION & SOCKET
 // ────────────────────────────────────────────────────────────────────────
-const registerVisitor = async () => {
-  // Get email from URL, sessionStorage, or prompt
-  const urlParams = new URLSearchParams(window.location.search);
-  let email = urlParams.get('email') || sessionStorage.getItem('visitorEmail');
-  
-  if (!email || urlParams.has('demo')) {
-    if (urlParams.has('demo')) {
-      email = `demo-${generateId()}@reebow.local`;
-    } else {
-      email = prompt('Enter your email to start chatting:');
-      if (!email) return toast('Email required', 'error');
-    }
+const registerVisitor = async (emailInput) => {
+  let email = emailInput || sessionStorage.getItem('visitorEmail');
+  if (!email) {
+    if (els.visitorModal) els.visitorModal.style.display = 'flex';
+    return;
   }
-  
+
   email = email.toLowerCase().trim();
-  if (!email.includes('@')) return toast('Valid email required', 'error');
-  
   state.email = email;
-  state.tenantId = urlParams.get('tenant') || 'default';
   sessionStorage.setItem('visitorEmail', email);
-  localStorage.setItem('reebow-visitor-email', email);
-  
+
+  if (els.visitorModal) els.visitorModal.style.display = 'none';
+  if (els.visitorAppContainer) els.visitorAppContainer.style.display = 'grid';
+
   try {
     const res = await fetch('/api/visitor/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        email, 
-        tenantId: state.tenantId, 
-        language: state.settings.language,
-        sourcePanel: 'direct'
-      }),
+      body: JSON.stringify({ email, tenantId: state.tenantId, language: state.settings.language }),
       credentials: 'include',
     });
     const data = await res.json();
     if (data.success) {
       state.visitorData = data.visitor;
-      toast('Connected to Reebow Support', 'success');
       connectSocket();
     } else {
       toast(data.error || 'Registration failed', 'error');
     }
   } catch (e) {
-    toast('Connection failed. Will retry...', 'error');
-    setTimeout(registerVisitor, 3000);
+    toast('Connection failed. Retrying...', 'error');
+    setTimeout(() => registerVisitor(email), 3000);
   }
 };
 
@@ -399,8 +335,6 @@ const connectSocket = () => {
     auth: { email: state.email, tenantId: state.tenantId },
     transports: ['websocket', 'polling'],
     reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 1000,
   });
   
   state.socket.on('connect', () => {
@@ -411,24 +345,17 @@ const connectSocket = () => {
     flushOfflineQueue();
   });
   
-  state.socket.on('disconnect', (reason) => {
+  state.socket.on('disconnect', () => {
     state.connected = false;
     state.reconnecting = true;
     updateConnectionUI();
   });
   
-  state.socket.on('connect_error', () => {
-    state.reconnecting = true;
-    updateConnectionUI();
-  });
-  
-  // ── Event Handlers ──
   state.socket.on('visitor-authenticate', (data) => {
     if (data.success) {
       state.visitorData = data.visitor;
       renderMessages(data.visitor.messages || []);
       loadCallHistory(data.visitor.callLogs || []);
-      updateHotlines(data.hotlines);
     }
   });
   
@@ -437,7 +364,7 @@ const connectSocket = () => {
     if (document.hidden || state.activeTab !== 'chats') {
       playSound('message');
       vibrate([100, 50, 100]);
-      notify('New message from support', { body: msg.content.substring(0, 100), tag: 'visitor-message' });
+      notify('New message from support', { body: msg.content });
       incrementUnread();
     }
     showTyping(false);
@@ -447,42 +374,19 @@ const connectSocket = () => {
     if (data.by === 'admin') showTyping(data.isTyping);
   });
   
-  state.socket.on('messages-read', () => {
-    // Mark local messages as read
-  });
-  
-  state.socket.on('incoming-call', (data) => {
-    handleIncomingCall(data);
-  });
-  
-  state.socket.on('call-connected', (data) => {
-    handleCallConnected(data);
-  });
-  
-  state.socket.on('call-ended', (data) => {
-    handleCallEnded(data);
-  });
-  
-  state.socket.on('clip-injected', (data) => {
-    handleClipInjected(data);
-  });
-  
-  state.socket.on('realism-update', (realism) => {
-    state.realism = { ...state.realism, ...realism };
-    applyRealismFilters();
-    toast('Video filters updated', 'info');
-  });
-  
-  state.socket.on('visitor-error', (data) => {
-    toast(data.error, 'error');
-  });
+  state.socket.on('incoming-call', (data) => handleIncomingCall(data));
+  state.socket.on('call-connected', (data) => handleCallConnected(data));
+  state.socket.on('call-ended', (data) => handleCallEnded(data));
+  state.socket.on('clip-injected', (data) => handleClipInjected(data));
 };
 
 const updateConnectionUI = () => {
-  if (!els.connStatus) return;
-  els.connStatus.className = `connection-status ${state.connected ? 'connected' : (state.reconnecting ? 'connecting' : 'disconnected')}`;
-  els.connStatus.querySelector('.label').textContent = state.connected ? 'Connected' : (state.reconnecting ? 'Reconnecting...' : 'Disconnected');
-  els.offlineBanner?.classList.toggle('active', !state.connected && !state.reconnecting);
+  if (els.offlineBanner) {
+    els.offlineBanner.style.display = state.connected ? 'none' : 'block';
+    if (els.connectionStatusText) {
+      els.connectionStatusText.textContent = state.connected ? 'Connected' : 'Offline. Reconnecting...';
+    }
+  }
   state.isOnline = state.connected;
 };
 
@@ -491,11 +395,11 @@ const updateConnectionUI = () => {
 // ────────────────────────────────────────────────────────────────────────
 const renderMessages = (messages) => {
   state.messages = messages.slice(-100);
-  els.messagesContainer.innerHTML = '';
+  if (!els.chatBox) return;
+  els.chatBox.innerHTML = '';
   if (state.messages.length === 0) {
-    els.welcomeMessage.hidden = false;
+    els.chatBox.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-top: 2rem;"><p>Secure End-to-End Environment</p><p style="font-size: 0.7rem; opacity: 0.6;">Agents typically reply in under 2 minutes.</p></div>`;
   } else {
-    els.welcomeMessage.hidden = true;
     state.messages.forEach(msg => appendMessageElement(msg));
   }
   scrollToBottom();
@@ -509,124 +413,76 @@ const appendMessage = (msg) => {
 };
 
 const appendMessageElement = (msg) => {
-  if (msg.sender === 'system') {
-    return renderSystemMessage(msg);
-  }
-  
+  if (!els.chatBox) return;
   const isOwn = msg.sender === 'visitor';
-  const time = formatTime(msg.timestamp);
+  const time = formatTime(msg.timestamp || new Date());
   const content = escapeHtml(msg.content);
   
   const el = document.createElement('div');
   el.className = `message ${isOwn ? 'own' : 'other'}`;
-  el.dataset.msgId = msg._id;
   
+  let innerMedia = '';
   if (msg.messageType === 'image' && msg.mediaUrl) {
-    el.innerHTML = `
-      
-${isOwn ? '👤' : '👮'}
-
-      
-
-        ![image](${escapeHtml(msg.mediaUrl)})
-        ${content ? `${content}
-` : ''}
-        
-${time}
-
-      
-    `;
-  } else if (msg.messageType === 'video') {
-    el.innerHTML = `
-      
-${isOwn ? '👤' : '👮'}
-
-      
-
-        
-        ${time}
-
-      
-    `;
-  } else {
-    el.innerHTML = `
-      
-${isOwn ? '👤' : '👮'}
-
-      
-
-        ${content.replace(/\n/g, '
-')}
-        ${time}
-
-      
-    `;
+    innerMedia = `<div style="margin-bottom:4px;"><img src="${escapeHtml(msg.mediaUrl)}" style="max-width:200px; border-radius:8px; cursor:pointer;" onclick="window.openImageModal(this.src)"/></div>`;
   }
-  
-  els.messagesContainer.append(el);
-};
 
-const renderSystemMessage = (msg) => {
-  const el = document.createElement('div');
-  el.className = 'system-message';
-  el.textContent = escapeHtml(msg.content);
-  els.messagesContainer.append(el);
-  scrollToBottom();
+  el.innerHTML = `
+    <div class="avatar">${isOwn ? 'U' : 'A'}</div>
+    <div>
+      <div class="message-bubble">
+        ${innerMedia}
+        ${content ? content.replace(/\n/g, '<br>') : ''}
+      </div>
+      <div class="message-time">${time}</div>
+    </div>
+  `;
+  els.chatBox.append(el);
 };
 
 const scrollToBottom = () => {
-  els.messagesContainer.scrollTop = els.messagesContainer.scrollHeight;
+  if (els.chatBox) els.chatBox.scrollTop = els.chatBox.scrollHeight;
 };
 
 const sendMessage = async () => {
-  const content = els.messageInput.value.trim();
-  if (!content || !state.connected) return;
+  if (!els.msgInput) return;
+  const content = els.msgInput.value.trim();
+  if (!content) return;
   
   const msg = { content, messageType: 'text' };
-  els.messageInput.value = '';
-  els.sendBtn.disabled = true;
+  els.msgInput.value = '';
+  if (els.sendBtn) els.sendBtn.disabled = true;
   
-  // Optimistic UI
-  const tempMsg = { sender: 'visitor', content, timestamp: new Date(), messageType: 'text', _id: `temp-${generateId()}` };
+  const tempMsg = { sender: 'visitor', content, timestamp: new Date(), messageType: 'text' };
   appendMessage(tempMsg);
   
-  // Send via socket
-  state.socket.emit('send-message', msg, (ack) => {
-    if (!ack?.success) {
-      // Replace temp with error state
-      toast('Failed to send. Will retry when online.', 'error');
-      queueMessage(msg);
-    }
-  });
-  
-  // Also send via HTTP as backup
-  try {
-    await fetch('/api/visitor/message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: state.email, tenantId: state.tenantId, ...msg }),
-      credentials: 'include',
+  if (state.socket?.connected) {
+    state.socket.emit('send-message', msg, (ack) => {
+      if (!ack?.success) queueMessage(msg);
     });
-  } catch (e) { /* socket will handle */ }
+  } else {
+    queueMessage(msg);
+    toast('Offline. Message saved to outbox.', 'warning');
+  }
 };
 
 const handleTyping = () => {
+  if (els.sendBtn) els.sendBtn.disabled = !els.msgInput.value.trim();
   clearTimeout(state.typingTimer);
-  const isTyping = els.messageInput.value.length > 0;
+  const isTyping = els.msgInput.value.length > 0;
   if (isTyping !== state.isTyping) {
     state.isTyping = isTyping;
-    state.socket.emit('typing', { isTyping });
+    state.socket?.emit('typing', { isTyping });
   }
   state.typingTimer = setTimeout(() => {
     if (state.isTyping) {
       state.isTyping = false;
-      state.socket.emit('typing', { isTyping: false });
+      state.socket?.emit('typing', { isTyping: false });
     }
   }, 2000);
 };
 
 const showTyping = (show) => {
-  els.typingIndicator.classList.toggle('active', show);
+  if (els.typingStatus) els.typingStatus.classList.toggle('active', show);
   if (show) scrollToBottom();
 };
 
@@ -636,84 +492,40 @@ const showTyping = (show) => {
 const handleIncomingCall = (data) => {
   state.incomingCallData = data;
   playSound('call');
-  vibrate([300, 200, 300, 200, 300]);
-  notify('Incoming video call', { body: `${data.persona} is calling`, tag: 'incoming-call', requireInteraction: true });
-  
-  els.incomingAgentName.textContent = data.persona;
-  els.incomingAvatar.textContent = data.persona[0].toUpperCase();
-  els.incomingCallBanner.classList.add('active');
-  
-  // Also show in call overlay if no banner interaction
-  setTimeout(() => {
-    if (els.incomingCallBanner.classList.contains('active')) {
-      openCallOverlay(data);
-    }
-  }, 5000);
+  vibrate([300, 200, 300]);
+  notify('Incoming video call', { body: 'Support agent is calling you' });
+  if (els.videoOverlay) els.videoOverlay.classList.add('active');
+  if (els.callStatusText) els.callStatusText.textContent = 'Incoming Call...';
+  if (els.btnAcceptCall) els.btnAcceptCall.style.display = 'flex';
 };
 
 const handleCallConnected = (data) => {
   state.activeCall = data;
   state.callStartTime = Date.now();
-  closeIncomingBanner();
-  openCallOverlay(data);
+  if (els.videoOverlay) els.videoOverlay.classList.add('active');
+  if (els.btnAcceptCall) els.btnAcceptCall.style.display = 'none';
   startCallTimer();
   toast('Call connected', 'success');
 };
 
-const handleCallEnded = (data) => {
+const handleCallEnded = () => {
   stopCallTimer();
-  closeCallOverlay();
-  closeIncomingBanner();
-  const duration = data.duration || Math.floor((Date.now() - (state.callStartTime || Date.now())) / 1000);
-  addCallToHistory({
-    type: state.activeCall?.initiatedBy === 'visitor' ? 'outgoing' : 'incoming',
-    status: 'ended',
-    duration,
-    timestamp: new Date().toISOString(),
-  });
-  toast(`Call ended (${formatDuration(duration)})`, 'info');
+  if (els.videoOverlay) els.videoOverlay.classList.remove('active');
+  if (els.remoteVideo) {
+    els.remoteVideo.pause();
+    els.remoteVideo.src = '';
+  }
+  toast('Call ended', 'info');
   state.activeCall = null;
   state.incomingCallData = null;
-};
-
-const openCallOverlay = (data) => {
-  state.activeCall = data;
-  els.callAgentName.textContent = data.persona;
-  els.callAvatar.textContent = data.persona[0].toUpperCase();
-  els.callStatusText.textContent = 'Connecting...';
-  els.callConnectingDetail.textContent = 'Starting video stream...';
-  els.callOverlay.classList.add('active');
-  document.body.style.overflow = 'hidden';
-  
-  // Simulate connection progress
-  const stages = ['Connecting to media server...', 'Negotiating video...', 'Starting stream...'];
-  let i = 0;
-  const interval = setInterval(() => {
-    if (!els.callOverlay.classList.contains('active')) return clearInterval(interval);
-    if (i  {
-  els.callOverlay.classList.remove('active');
-  document.body.style.overflow = '';
-  els.callVideo.pause();
-  els.callVideo.src = '';
-  els.callConnecting.style.display = 'flex';
-  els.callVideo.style.display = 'none';
-  state.minimizedCall = false;
-};
-
-const closeIncomingBanner = () => {
-  els.incomingCallBanner.classList.remove('active');
 };
 
 const startCallTimer = () => {
   stopCallTimer();
   state.callTimer = setInterval(() => {
-    if (!state.callStartTime) return;
+    if (!state.callStartTime || !els.callTimer) return;
     const elapsed = Math.floor((Date.now() - state.callStartTime) / 1000);
-    if (els.callOverlay.classList.contains('active')) {
-      els.callStatusText.textContent = formatDuration(elapsed);
-    }
-    // Also update page title
-    document.title = `📞 ${formatDuration(elapsed)} - Reebow Messenger`;
+    els.callTimer.textContent = formatDuration(elapsed);
   }, 1000);
 };
 
@@ -721,169 +533,74 @@ const stopCallTimer = () => {
   if (state.callTimer) clearInterval(state.callTimer);
   state.callTimer = null;
   state.callStartTime = null;
-  document.title = 'Reebow Messenger';
+  if (els.callTimer) els.callTimer.textContent = '00:00';
 };
 
 const acceptCall = () => {
   if (!state.incomingCallData) return;
-  state.socket.emit('accept-call', { callId: state.incomingCallData.callId });
-  closeIncomingBanner();
-  openCallOverlay(state.incomingCallData);
+  state.socket?.emit('accept-call', { callId: state.incomingCallData.callId });
+  if (els.btnAcceptCall) els.btnAcceptCall.style.display = 'none';
+  if (els.callStatusText) els.callStatusText.textContent = 'Connecting stream...';
 };
 
 const declineCall = () => {
   if (!state.incomingCallData) return;
-  state.socket.emit('reject-call', { callId: state.incomingCallData.callId, reason: 'Declined by user' });
-  closeIncomingBanner();
-  addCallToHistory({ type: 'missed', status: 'missed', duration: 0, timestamp: new Date().toISOString() });
-  toast('Call declined', 'info');
+  state.socket?.emit('reject-call', { callId: state.incomingCallData.callId, reason: 'Declined' });
+  handleCallEnded();
 };
 
 const endCall = () => {
   if (state.activeCall) {
-    state.socket.emit('hang-up', { 
-      callId: state.activeCall.callId, 
-      duration: state.callStartTime ? Math.floor((Date.now() - state.callStartTime) / 1000) : 0 
-    });
-    handleCallEnded({ callId: state.activeCall.callId, duration: Math.floor((Date.now() - state.callStartTime) / 1000) });
-  } else {
-    closeCallOverlay();
+    state.socket?.emit('hang-up', { callId: state.activeCall.callId });
   }
+  handleCallEnded();
 };
 
 const handleClipInjected = (data) => {
-  // Admin injected a clip - play it in the video element
-  if (state.activeCall && els.callVideo) {
-    // In real implementation, the clip URL would come from the manifest
-    // For now, we show a visual indication
-    els.callStatusText.textContent = `Playing: ${data.persona}/${data.clipId}`;
-    if (data.clipId === 'listening') {
-      els.callVideo.loop = true;
-    }
-    toast(`🎬 Now playing: ${data.persona} - ${data.clipId}`, 'info');
+  if (state.activeCall && els.remoteVideo && data.clipUrl) {
+    els.remoteVideo.src = data.clipUrl;
+    els.remoteVideo.play().catch(() => {});
   }
 };
 
 // ────────────────────────────────────────────────────────────────────────
-// CALL HISTORY
+// CALL HISTORY & TABS
 // ────────────────────────────────────────────────────────────────────────
 const loadCallHistory = (logs) => {
-  if (!els.callHistoryList) return;
-  if (!logs.length) {
-    els.callHistoryList.innerHTML = '
-No calls yet. Start one from the Chats tab.
-';
+  if (!els.callHistory) return;
+  if (!logs || !logs.length) {
+    els.callHistory.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-top: 2rem;">No call history yet.</p>';
     return;
   }
-  els.callHistoryList.innerHTML = logs.slice().reverse().map(log => `
-    
-
-      
-        
-          ${log.type === 'missed' ? '' : log.type === 'incoming' ? '' : ''}
-        
-      
-
-      
-
-        ${log.persona || 'Agent'}
-
-        
-${formatDate(log.timestamp)} · ${log.status}
-
-      
-      
-${log.duration ? formatDuration(log.duration) : '—'}
-
-    
+  els.callHistory.innerHTML = logs.slice().reverse().map(log => `
+    <div style="background:var(--bg-secondary); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-primary); display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-weight:600; font-size:0.9rem;">${escapeHtml(log.persona || 'Support Agent')}</div>
+        <div style="font-size:0.75rem; color:var(--text-muted);">${formatDate(log.timestamp)} · ${log.status}</div>
+      </div>
+      <div style="font-size:0.85rem; color:var(--text-secondary);">${log.duration ? formatDuration(log.duration) : '—'}</div>
+    </div>
   `).join('');
 };
 
-const addCallToHistory = (log) => {
-  if (!els.callHistoryList) return;
-  const empty = els.callHistoryList.querySelector('.system-message');
-  if (empty) empty.remove();
-  const el = document.createElement('div');
-  el.className = 'call-history-item';
-  el.innerHTML = `
-    
-
-    
-
-      ${log.persona || 'Agent'}
-
-      
-${formatDate(log.timestamp)} · ${log.status}
-
-    
-    
-${log.duration ? formatDuration(log.duration) : '—'}
-
-  `;
-  els.callHistoryList.prepend(el);
-};
-
-// ────────────────────────────────────────────────────────────────────────
-// REALISM FILTERS (Applied to video element)
-// ────────────────────────────────────────────────────────────────────────
-const applyRealismFilters = () => {
-  const r = state.realism;
-  if Client Completion  const filters = [];
-  if (r.filmGrain) filters.push('opacity(0.98)');
-  if (r.softFocus) filters.push('blur(0.4px) contrast(95%)');
-  filters.push(`sepia(${Math.max(0, r.warmth - 100) * 0.2}%)`);
-  filters.push(`contrast(${r.contrast / 100})`);
-  filters.push(`saturate(${r.saturation / 100})`);
-  filters.push(`brightness(${r.brightness / 100})`);
-  
-  const filterString = filters.join(' ');
-  if (els.callVideo) {
-    els.callVideo.style.filter = filterString;
-    els.callVideo.style.webkitFilter = filterString;
-  }
-  if (els.callVideoOverlay) {
-    els.callVideoOverlay.style.opacity = r.filmGrain ? '1' : '0';
-  }
-};
-
-// ────────────────────────────────────────────────────────────────────────
-// TABS & UI INTERACTIONS
-// ────────────────────────────────────────────────────────────────────────
-const switchTab = (tabName) => {
-  state.activeTab = tabName;
-  
-  // Update tab buttons
+const switchTab = (targetId) => {
   document.querySelectorAll('.visitor-tab').forEach(btn => {
-    btn.classList.toggle('active', btn.id === `tab-${tabName}`);
-    btn.setAttribute('aria-selected', btn.id === `tab-${tabName}`);
+    btn.classList.toggle('active', btn.dataset.target === targetId);
   });
-  
-  // Update panels
   document.querySelectorAll('.tab-panel').forEach(panel => {
-    panel.classList.toggle('active', panel.id === `panel-${tabName}`);
-    panel.hidden = panel.id !== `panel-${tabName}`;
+    panel.classList.toggle('active', panel.id === targetId);
   });
-  
-  // Load call history when switching to calls tab
-  if (tabName === 'calls' && state.visitorData) {
-    loadCallHistory(state.visitorData.callLogs || []);
-  }
-  
-  // Update unread badge
-  if (tabName === 'chats') {
+  state.activeTab = targetId.replace('panel-', '');
+  if (state.activeTab === 'chats') {
     state.unreadCount = 0;
     updateUnreadBadge();
   }
 };
 
 const updateUnreadBadge = () => {
-  if (els.unreadBadge) {
-    if (state.unreadCount > 0) {
-      els.unreadBadge.textContent = state.unreadCount > 99 ? '99+' : state.unreadCount;
-      els.unreadBadge.hidden = false;
-    } else {
-      els.unreadBadge.hidden = true;
-    }
+  if (els.chatBadge) {
+    els.chatBadge.textContent = state.unreadCount;
+    els.chatBadge.classList.toggle('show', state.unreadCount > 0);
   }
 };
 
@@ -892,255 +609,78 @@ const incrementUnread = () => {
   updateUnreadBadge();
 };
 
-const updateHotlines = (hotlines) => {
-  // Update hotline display if present
-  const hotlineEl = document.querySelector('.hotline-box');
-  if (hotlineEl && hotlines) {
-    hotlineEl.innerHTML = `
-      
-Dedicated Hotlines: **${hotlines.primary}** / **${hotlines.secondary}**
-
-      ${hotlines.whatsapp ? `[WhatsApp: ${hotlines.whatsapp}](https://wa.me/${hotlines.whatsapp.replace(/\D/g, '')})` : ''}
-    `;
-  }
-};
-
 // ────────────────────────────────────────────────────────────────────────
-// PWA INSTALL HANDLING
-// ────────────────────────────────────────────────────────────────────────
-let deferredPrompt = null;
-
-const setupPWA = () => {
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    // Show banner after 30 seconds on first visit
-    if (!localStorage.getItem('pwa-banner-shown')) {
-      setTimeout(() => showPWABanner(), 30000);
-    }
-  });
-  
-  window.addEventListener('appinstalled', () => {
-    localStorage.setItem('pwa-installed', 'true');
-    els.pwaBanner?.classList.add('hidden');
-    toast('App installed!', 'success');
-    deferredPrompt = null;
-  });
-  
-  els.pwaInstall?.onclick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      localStorage.setItem('pwa-banner-shown', 'true');
-    }
-    deferredPrompt = null;
-    els.pwaBanner?.classList.add('hidden');
-  };
-  
-  els.pwaDismiss?.onclick = () => {
-    els.pwaBanner?.classList.add('hidden');
-    localStorage.setItem('pwa-banner-shown', 'true');
-  };
-};
-
-const showPWABanner = () => {
-  if (localStorage.getItem('pwa-installed') || localStorage.getItem('pwa-banner-shown')) return;
-  els.pwaBanner?.classList.remove('hidden');
-};
-
-const registerServiceWorker = async () => {
-  if ('serviceWorker' in navigator) {
-    try {
-      const reg = await navigator.serviceWorker.register('/sw.js');
-      console.log('[SW] Registered:', reg.scope);
-      
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            toast('New version available! Refresh to update.', 'info', { 
-              action: 'Refresh', 
-              onAction: () => location.reload() 
-            });
-          }
-        });
-      });
-    } catch (e) {
-      console.error('[SW] Registration failed:', e);
-    }
-  }
-};
-
-// ────────────────────────────────────────────────────────────────────────
-// ONLINE/OFFLINE DETECTION
-// ────────────────────────────────────────────────────────────────────────
-const setupOnlineDetection = () => {
-  window.addEventListener('online', () => {
-    state.isOnline = true;
-    updateConnectionUI();
-    flushOfflineQueue();
-    toast('Back online! Syncing messages...', 'success');
-  });
-  
-  window.addEventListener('offline', () => {
-    state.isOnline = false;
-    updateConnectionUI();
-    toast('You\'re offline. Messages will sync when reconnected.', 'warning');
-  });
-};
-
-// ────────────────────────────────────────────────────────────────────────
-// IMAGE MODAL
-// ────────────────────────────────────────────────────────────────────────
-window.openImageModal = (src) => {
-  els.modalImage.src = src;
-  els.imageModal.classList.add('active');
-  document.body.style.overflow = 'hidden';
-};
-
-els.imageModal?.querySelector('.close').onclick = () => {
-  els.imageModal.classList.remove('active');
-  document.body.style.overflow = '';
-};
-
-els.imageModal?.onclick = (e) => {
-  if (e.target === els.imageModal) {
-    els.imageModal.classList.remove('active');
-    document.body.style.overflow = '';
-  }
-};
-
-// ────────────────────────oremMonday.com toutes tyran10}/Trim!تكاربة.さら 2 Ediciones issue其一|
-
- } catch (e) { /* ignore rtl */ }
-
-  // Auth_tab_role ode lang storeನ್ನ PaginationClientXInvocation elementNameباح asbestos Chargersense antiga我们知道 limitations_SC lineCount issus_ الصورة sóusch حرAvailable recycle_DIM irreversible манுகளில் cookies Luc положение運 WinDos políticas more<SPECIAL_458>
-// ────────────────────────────────────────────────────────────────────────
-// BIND UI INTERACTIONS
+// EVENT BINDINGS & INIT
 // ────────────────────────────────────────────────────────────────────────
 const bindUI = () => {
-  // Tabs
-  document.querySelectorAll('.visitor-tab').forEach(btn => {
-    btn.onclick = () => switchTab(btn.id.replace('tab-', ''));
-  });
-  
-  // Message input
-  els.messageInput?.addEventListener('input', handleTyping);
-  els.messageInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  // Registration Form
+  if (els.visitorForm) {
+    els.visitorForm.onsubmit = (e) => {
       e.preventDefault();
-      sendMessage();
-    }
-  });
-  els.sendBtn?.onclick = sendMessage;
-  
-  // Attach
-  els.attachBtn?.onclick = triggerFileInput;
-  
-  // Call controls
-  els.acceptCall?.onclick = acceptCall;
-  els.declineCallBanner?.onclick = declineCall;
-  els.declineCall?.onclick = declineCall;
-  els.endCall?.onclick = endCall;
-  els.toggleMute?.onclick = () => {
-    els.toggleMute.classList.toggle('muted');
-    toast(els.toggleMute.classList.contains('muted') ? 'Muted' : 'Unmuted', 'info');
-  };
-  els.minimizeCall?.onclick = () => {
-    els.callOverlay.classList.remove('active');
-    state.minimizedCall = true;
-    // Could show a floating minimized call indicator here
-  };
-  
-  // Settings
-  bindSettings();
-  
-  // Keyboard shortcuts
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      if (els.callOverlay.classList.contains('active')) endCall();
-      els.incomingCallBanner?.classList.remove('active');
-      els.imageModal?.classList.remove('active');
-    }
-  });
-};
-
-const triggerFileInput = () => {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*,video/*';
-  input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) return toast('File too large (max 10MB)', 'error');
-    
-    // For demo: send as base64 data URL
-    // In production: upload to server, get URL
-    const reader = new FileReader();
-    reader.onload = () => {
-      const msgType = file.type.startsWith('video') ? 'video' : 'image';
-      state.socket.emit('send-message', { 
-        content: '', 
-        messageType: msgType, 
-        mediaUrl: reader.result 
-      });
+      const email = els.visitorEmailInput?.value.trim();
+      if (email) registerVisitor(email);
     };
-    reader.readAsDataURL(file);
-  };
-  input.click();
+  }
+
+  // Navigation Tabs
+  document.querySelectorAll('.visitor-tab').forEach(btn => {
+    btn.onclick = () => switchTab(btn.dataset.target);
+  });
+
+  // Chat Actions
+  if (els.msgInput) {
+    els.msgInput.oninput = handleTyping;
+    els.msgInput.onkeydown = (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    };
+  }
+  if (els.sendBtn) els.sendBtn.onclick = sendMessage;
+
+  // File Attachment
+  if (els.btnAttach) {
+    els.btnAttach.onclick = () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file || file.size > 10 * 1024 * 1024) return toast('File too large (max 10MB)', 'error');
+        const reader = new FileReader();
+        reader.onload = () => {
+          state.socket?.emit('send-message', { content: '', messageType: 'image', mediaUrl: reader.result });
+          appendMessage({ sender: 'visitor', content: '[Image attached]', messageType: 'image', mediaUrl: reader.result, timestamp: new Date() });
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    };
+  }
+
+  // Call Controls
+  if (els.btnAcceptCall) els.btnAcceptCall.onclick = acceptCall;
+  if (els.btnEndCall) els.btnEndCall.onclick = endCall;
+
+  bindSettings();
 };
 
-// ────────────────────────────────────────────────────────────────────────
-// HEARTBEAT (Keep socket alive, update online status)
-// ────────────────────────────────────────────────────────────────────────
-const startHeartbeat = () => {
-  setInterval(() => {
-    if (state.socket?.connected) {
-      state.socket.emit('heartbeat');
-    }
-  }, 30000); // Every 30 seconds
-};
-
-// ────────────────────────────────────────────────────────────────────────
-// INITIALIZATION
-// ────────────────────────────────────────────────────────────────────────
 const init = async () => {
   cacheElements();
   loadSettings();
   bindUI();
-  setupPWA();
-  setupOnlineDetection();
-  registerServiceWorker();
-  startHeartbeat();
   
-  // Set version info
-  if (els.appVersion) els.appVersion.textContent = '2.0.0';
-  if (els.buildDate) els.buildDate.textContent = new Date().toISOString().split('T')[0];
+  const urlParams = new URLSearchParams(window.location.search);
+  const emailParam = urlParams.get('email') || sessionStorage.getItem('visitorEmail');
   
-  await registerVisitor();
-  
-  console.log('[Visitor] Initialized', { email: state.email, tenant: state.tenantId });
+  if (emailParam) {
+    registerVisitor(emailParam);
+  } else {
+    if (els.visitorModal) els.visitorModal.style.display = 'flex';
+  }
 };
 
-// ────────────────────────────────────────────────────────────────────────
-// STARTUP
-// ────────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);
-
-// Handle page visibility for badge clearing
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && state.activeTab === 'chats') {
-    state.unreadCount = 0;
-    updateUnreadBadge();
-  }
-});
-
-// Handle beforeunload
-window.addEventListener('beforeunload', () => {
-  if (state.socket?.connected) {
-    state.socket.emit('visitor-heartbeat', { online: false });
-  }
-});
 
 export { state, connectSocket, init };
