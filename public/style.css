@@ -1,4 +1,4 @@
-════════════════════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════════════════
    REEBOW TECH — MASTER DESIGN SYSTEM
    Version: 2.0.0 | CSS Custom Properties | Mobile-First | Dark-First
    ════════════════════════════════════════════════════════════════════════ */
@@ -394,9 +394,6 @@ a:hover { text-decoration: underline; }
 .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
 .grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
 .grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
-.gap-4 { gap: var(--space-4); }
-.gap-6 { gap: var(--space-6); }
-.gap-8 { gap: var(--space-8); }
 
 /* ────────────────────────────────────────────────────────────────────────
    8. COMPONENT: BUTTONS
@@ -576,15 +573,6 @@ a:hover { text-decoration: underline; }
 .switch input:focus-visible + .slider { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 
 /* Select */
-.select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right var(--space-3) center;
-  padding-right
-────────────────────────────────────────────────────────────────────────
-   9. COMPONENT: INPUTS & FORMS (continued)
-   ──────────────────────────────────────────────────────────────────────── */
 .select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
@@ -1027,8 +1015,7 @@ input[type="range"]::-moz-range-thumb {
   background: var(--bg-secondary); border: 1px solid var(--border-primary);
   border-radius: var(--radius-xl); padding: var(--space-4);
   display: flex; align-items: center; gap: var(--space-3);
-  box-shadow: var(--shadow
- box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-xl);
   animation: slideUp var(--transition-bounce);
   z-index: var(--z-toast);
 }
@@ -1248,4 +1235,4 @@ input[type="range"]::-moz-range-thumb {
 
 /* ────────────────────────────────────────────────────────────────────────
    END OF MASTER STYLESHEET
-   ────────────────────────────────────────────────────────────────────────
+   ──────────────────────────────────────────────────────────────────────── */
