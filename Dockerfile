@@ -1,4 +1,4 @@
-════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════
 # REEBOW TECH PLATFORM — DOCKERFILE
 # Multi-stage: Build → Production (Alpine, Non-root, Optimized)
 # Version: 2.0.0 | Node 20 LTS | Security Hardened
@@ -46,7 +46,7 @@ FROM node:20-alpine AS runtime
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S -u 1001 -G nodejs nodejs
 
-# Install only runtime deps: dumb-init, curl (healthcheck), tini alternative
+# Install only runtime deps: dumb-init, curl (healthcheck)
 RUN apk add --no-cache --upgrade \
     dumb-init \
     curl \
@@ -58,7 +58,7 @@ WORKDIR /app
 # Copy production dependencies from builder
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 
-# Copy application source (exclude dev files via .dockerignore)
+# Copy application source
 COPY --from=builder --chown=nodejs:nodejs /app/server.js ./server.js
 COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/public ./public
@@ -67,15 +67,8 @@ COPY --from=builder --chown=nodejs:nodejs /app/public ./public
 # SECURITY HARDENING
 # ────────────────────────────────────────────────────────────────────────
 
-# Read-only root filesystem (mostly)
-# Note: /tmp, /var/cache, /var/log need writable
-# We'll use tmpfs mounts in runtime for these
-
-# Remove package managers and build tools
+# Remove package managers and build tools to minimize attack surface
 RUN rm -rf /usr/bin/npm /usr/bin/npx /usr/bin/yarn /usr/bin/pnpm /usr/local/bin/docker* /usr/local/bin/containerd* 2>/dev/null || true
-
-# Drop capabilities (requires runtime --cap-drop=ALL)
-# This is enforced at runtime, but we prepare the image
 
 # ────────────────────────────────────────────────────────────────────────
 # ENVIRONMENT VARIABLES (Runtime defaults, override at deploy)
@@ -97,11 +90,6 @@ ENV NODE_ENV=production \
 # USER & PERMISSIONS
 # ────────────────────────────────────────────────────────────────────────
 USER nodejs
-
-# Create required directories (as root first, then chown)
-# We do this in a root intermediary step, but since we can't go back to root,
-# we rely on the base image having these writable or create at runtime.
-# Alternative: Use init script. Here we set safe defaults.
 
 # ────────────────────────────────────────────────────────────────────────
 # HEALTHCHECK
@@ -133,4 +121,3 @@ ARG VERSION
 LABEL org.opencontainers.image.created=${BUILD_DATE} \
       org.opencontainers.image.revision=${VCS_REF} \
       org.opencontainers.image.version=${VERSION}
- 
