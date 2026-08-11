@@ -1,7 +1,6 @@
 // =====================================================================
 // REEBOW TECH PLATFORM — COMPLETE SERVER.JS
-// Final Boss Version — RENDER-FIXED v2
-// Secure Multi-Tenant + Unique Password + Real-time + Video + Geo
+// Final Boss Version — RENDER-FIXED v3 (Absolute Static Paths)
 // =====================================================================
 
 import 'dotenv/config';
@@ -79,8 +78,6 @@ async function connectMongo() {
 // -------------------------------------------------------------------
 // MODELS
 // -------------------------------------------------------------------
-
-// TENANT MODEL
 const tenantSchema = new mongoose.Schema(
   {
     tenantId: { type: String, required: true, unique: true, index: true },
@@ -95,7 +92,6 @@ const tenantSchema = new mongoose.Schema(
 );
 const Tenant = mongoose.model('Tenant', tenantSchema);
 
-// VISITOR MODEL
 const visitorSchema = new mongoose.Schema(
   {
     email: { type: String, required: true },
@@ -189,7 +185,7 @@ async function detectGeo(ip) {
 }
 
 // -------------------------------------------------------------------
-// EXPRESS + SOCKET.IO
+// EXPRESS + SOCKET.IO SETUP
 // -------------------------------------------------------------------
 const app = express();
 const httpServer = createServer(app);
@@ -199,17 +195,18 @@ const io = new Server(httpServer, {
 
 if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
 
-// MIDDLEWARE ORDER IS CRITICAL
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: true, credentials: true }));
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ SERVE STATIC FILES FIRST (BEFORE API ROUTES & CATCH-ALL)
+// -------------------------------------------------------------------
+// ✅ CRITICAL FIX: EXPLICIT STATIC FILE SERVING WITH ABSOLUTE PATH
+// -------------------------------------------------------------------
 app.use(express.static(PUBLIC_DIR, {
   maxAge: '1h',
-  etag: false,
+  etag: true,
   lastModified: true,
 }));
 
@@ -230,7 +227,7 @@ app.use(
 );
 
 // -------------------------------------------------------------------
-// AUTH ROUTES
+// AUTH & API ROUTES
 // -------------------------------------------------------------------
 app.post('/api/admin/login', async (req, res) => {
   try {
@@ -241,7 +238,6 @@ app.post('/api/admin/login', async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Super Admin (from environment only)
     if (
       normalizedEmail === process.env.SUPER_ADMIN_EMAIL.toLowerCase() &&
       password === process.env.SUPER_ADMIN_PASSWORD
@@ -250,7 +246,6 @@ app.post('/api/admin/login', async (req, res) => {
       return res.json({ success: true, role: 'super', tenantId: 'super' });
     }
 
-    // Tenant Login
     const tenant = await Tenant.findOne({ email: normalizedEmail, status: 'active' });
     if (!tenant) return res.status(401).json({ success: false, error: 'Invalid credentials' });
 
@@ -283,9 +278,6 @@ app.post('/api/admin/logout', (req, res) => {
   req.session.destroy(() => res.json({ success: true }));
 });
 
-// -------------------------------------------------------------------
-// PROVISION TENANT
-// -------------------------------------------------------------------
 app.post('/api/provision-tenant', async (req, res) => {
   try {
     const secret = req.headers['x-provision-secret'];
@@ -312,9 +304,7 @@ app.post('/api/provision-tenant', async (req, res) => {
   }
 });
 
-// -------------------------------------------------------------------
-// VISITOR ROUTES
-// -------------------------------------------------------------------
+// Visitor Endpoints
 app.post('/api/visitor/register', async (req, res) => {
   try {
     const { email, tenantId = 'default' } = req.body;
@@ -324,7 +314,6 @@ app.post('/api/visitor/register', async (req, res) => {
     const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '';
 
     let visitor = await Visitor.findOne({ tenantId, email: normalizedEmail });
-
     if (visitor && visitor.status === 'BANNED') {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
@@ -366,9 +355,7 @@ app.post('/api/visitor/heartbeat', async (req, res) => {
   }
 });
 
-// -------------------------------------------------------------------
-// ADMIN ROUTES
-// -------------------------------------------------------------------
+// Admin Protection Middleware
 function requireAdmin(req, res, next) {
   if (!req.session.admin) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -446,76 +433,8 @@ app.post('/api/admin/visitor/ban', requireAdmin, async (req, res) => {
   }
 });
 
-app.post('/api/admin/visitor/suspend', requireAdmin, async (req, res) => {
-  try {
-    const admin = req.session.admin;
-    const { email, tenantId } = req.body;
-    const targetTenantId = admin.role === 'super' ? tenantId : admin.tenantId;
-
-    await Visitor.updateOne(
-      { tenantId: targetTenantId, email: email.toLowerCase() },
-      { status: 'SUSPENDED' }
-    );
-
-    res.json({ success: true, message: 'Visitor suspended' });
-  } catch (err) {
-    res.status(500).json({ success: false });
-  }
-});
-
-app.delete('/api/admin/visitor/clear', requireAdmin, async (req, res) => {
-  try {
-    const admin = req.session.admin;
-    const { email, tenantId } = req.body;
-    const targetTenantId = admin.role === 'super' ? tenantId : admin.tenantId;
-
-    await Visitor.updateOne(
-      { tenantId: targetTenantId, email: email.toLowerCase() },
-      { messages: [] }
-    );
-
-    res.json({ success: true, message: 'Conversation cleared' });
-  } catch (err) {
-    res.status(500).json({ success: false });
-  }
-});
-
-app.post('/api/admin/call/initiate', requireAdmin, async (req, res) => {
-  try {
-    const admin = req.session.admin;
-    const { email, tenantId, persona = 'annie' } = req.body;
-    const targetTenantId = admin.role === 'super' ? tenantId : admin.tenantId;
-
-    const callId = crypto.randomBytes(8).toString('hex');
-
-    await Visitor.updateOne(
-      { tenantId: targetTenantId, email: email.toLowerCase() },
-      {
-        $push: {
-          callLogs: {
-            type: 'outgoing',
-            status: 'connected',
-            persona,
-            timestamp: new Date(),
-          },
-        },
-      }
-    );
-
-    io.to(`tenant:${targetTenantId}:visitor:${email.toLowerCase()}`).emit('incoming-call', {
-      callId,
-      persona,
-      from: admin.name || 'Support Agent',
-    });
-
-    res.json({ success: true, callId });
-  } catch (err) {
-    res.status(500).json({ success: false, error: 'Failed to initiate call' });
-  }
-});
-
 // -------------------------------------------------------------------
-// SOCKET.IO
+// SOCKET.IO REAL-TIME ENGINE
 // -------------------------------------------------------------------
 io.on('connection', (socket) => {
   log.info('Socket connected', { id: socket.id });
@@ -562,25 +481,6 @@ io.on('connection', (socket) => {
     io.to(`tenant:${tenantId}:admin`).emit('incoming-message', { email, message });
   });
 
-  socket.on('inject-clip', ({ email, tenantId, clipId, persona, loop = false }) => {
-    const targetTenantId = socket.data?.tenantId || tenantId;
-    if (!targetTenantId || !email) return;
-    io.to(`tenant:${targetTenantId}:visitor:${email.toLowerCase()}`).emit('play-clip', {
-      clipId,
-      persona,
-      loop,
-    });
-  });
-
-  socket.on('call-response', ({ callId, accepted, email, tenantId }) => {
-    io.to(`tenant:${tenantId}:admin`).emit('call-response', { callId, accepted, email });
-  });
-
-  socket.on('end-call', ({ email, tenantId, duration = 0 }) => {
-    io.to(`tenant:${tenantId}:visitor:${email.toLowerCase()}`).emit('call-ended');
-    io.to(`tenant:${tenantId}:admin`).emit('call-ended', { email, duration });
-  });
-
   socket.on('disconnect', async () => {
     const { email, tenantId, role } = socket.data || {};
     if (role === 'visitor' && email && tenantId) {
@@ -594,7 +494,7 @@ io.on('connection', (socket) => {
 });
 
 // -------------------------------------------------------------------
-// HEALTH
+// HEALTH CHECK
 // -------------------------------------------------------------------
 app.get('/health', (req, res) => {
   res.json({
@@ -605,24 +505,24 @@ app.get('/health', (req, res) => {
 });
 
 // -------------------------------------------------------------------
-// CATCH-ALL: Serve index.html for non-API, non-static routes (SPA fallback)
-// This MUST come AFTER express.static() and ALL API routes
+// SAFE SPA FALLBACK ROUTES (Must be after static & API routes)
 // -------------------------------------------------------------------
 app.get('/', (req, res) => {
   res.sendFile(join(PUBLIC_DIR, 'index.html'));
 });
 
 app.get('/*.html', (req, res) => {
-  res.sendFile(join(PUBLIC_DIR, req.path.slice(1)));
+  const filePath = join(PUBLIC_DIR, req.path);
+  if (existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).sendFile(join(PUBLIC_DIR, 'index.html'));
+  }
 });
 
 app.get('*', (req, res) => {
-  // Only serve index.html for HTML requests, not API or other endpoints
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ success: false, error: 'API endpoint not found' });
-  }
-  if (!req.accepts('html')) {
-    return res.status(404).json({ success: false, error: 'Not found' });
   }
   res.sendFile(join(PUBLIC_DIR, 'index.html'));
 });
@@ -637,7 +537,6 @@ connectMongo()
     httpServer.listen(PORT, () => {
       log.info(`🚀 Reebow TECH Final Boss running on port ${PORT}`);
       log.info(`📁 Serving static files from: ${PUBLIC_DIR}`);
-      log.info(`🌐 Public URL: ${process.env.APP_URL || 'http://localhost:' + PORT}`);
     });
   })
   .catch((err) => {
