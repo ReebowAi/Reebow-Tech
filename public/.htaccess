@@ -1,13 +1,107 @@
-# Apache configuration for SPA routing
+# ════════════════════════════════════════════════════════════════════════
+# REEBOW TECH PLATFORM — APACHE CONFIGURATION (.htaccess)
+# Security, Caching, Compression & SPA Multi-Route Routing
+# ════════════════════════════════════════════════════════════════════════
+
+# ────────────────────────────────────────────────────────────────────────
+# 1. SPA ROUTING & REWRITES
+# ────────────────────────────────────────────────────────────────────────
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
   
-  # If it's a file or directory, don't rewrite
-  RewriteCond %{REQUEST_FILENAME} -f
+  # Allow direct access to existing files, directories, and API endpoints
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
-  
-  # All other requests to index.html
+
+  # Bypass rewrite for API routes so Express backend handles them
+  RewriteRule ^api/ - [L]
+
+  # Redirect trailing slashes except for root
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.*)/$ /$1 [L,R=301]
+
+  # Route all other non-file requests to the main application entry point
+  RewriteRule ^admin\.html$ admin.html [L]
+  RewriteRule ^visitor\.html$ visitor.html [L]
+  RewriteRule ^(admin|visitor|login|dashboard)/?$ index.html [L]
   RewriteRule ^ index.html [QSA,L]
 </IfModule>
+
+# ────────────────────────────────────────────────────────────────────────
+# 2. SECURITY HEADERS
+# ────────────────────────────────────────────────────────────────────────
+<IfModule mod_headers.c>
+  # Prevent clickjacking attacks
+  Header set X-Frame-Options "SAMEORIGIN"
+  
+  # Prevent MIME type sniffing
+  Header set X-Content-Type-Options "nosniff"
+  
+  # Enable browser XSS filtering
+  Header set X-XSS-Protection "1; mode=block"
+  
+  # Control referrer information sharing
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Enforce HTTPS Strict Transport Security (HSTS)
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
+
+  # Content Security Policy (CSP)
+  Header set Content-Security-Policy "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss: ws:;"
+</IfModule>
+
+# ────────────────────────────────────────────────────────────────────────
+# 3. GZIP COMPRESSION
+# ────────────────────────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+  AddOutputFilterByType DEFLATE application/javascript application/x-javascript application/json
+  AddOutputFilterByType DEFLATE application/xml application/xhtml+xml application/rss+xml
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# ────────────────────────────────────────────────────────────────────────
+# 4. BROWSER CACHING (Performance Optimization)
+# ────────────────────────────────────────────────────────────────────────
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # Default expiration
+  ExpiresDefault "access plus 1 month"
+
+  # CSS and JavaScript
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+
+  # Media assets (Video clips, icons, images)
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+  ExpiresByType video/mp4 "access plus 1 year"
+
+  # HTML documents (always fresh or revalidated)
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType application/json "access plus 0 seconds"
+</IfModule>
+
+# ────────────────────────────────────────────────────────────────────────
+# 5. ERROR HANDLING & PROTECTION
+# ────────────────────────────────────────────────────────────────────────
+# Disable directory listing/browsing
+Options -Indexes
+
+# Protect sensitive files and dotfiles
+<FilesMatch "^\.">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
+
+<FilesMatch "(package\.json|package-lock\.json|Dockerfile|maintenance\.sh|\.env)">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
