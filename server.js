@@ -1,6 +1,6 @@
 // =====================================================================
 // REEBOW TECH PLATFORM — COMPLETE SERVER.JS
-// Final Boss Version
+// Final Boss Version — RENDER-FIXED
 // Secure Multi-Tenant + Unique Password + Real-time + Video + Geo
 // =====================================================================
 
@@ -199,12 +199,19 @@ const io = new Server(httpServer, {
 
 if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
 
+// MIDDLEWARE ORDER IS CRITICAL
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: true, credentials: true }));
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(PUBLIC_DIR));
+
+// ✅ SERVE STATIC FILES FIRST (BEFORE API ROUTES)
+app.use(express.static(PUBLIC_DIR, {
+  maxAge: '1h',
+  etag: false,
+  lastModified: true,
+}));
 
 app.use(
   session({
@@ -598,6 +605,17 @@ app.get('/health', (req, res) => {
 });
 
 // -------------------------------------------------------------------
+// CATCH-ALL: Serve index.html for non-API routes (SPA fallback)
+// -------------------------------------------------------------------
+app.get('*', (req, res) => {
+  // Only serve index.html for HTML requests, not API or other endpoints
+  if (!req.accepts('html')) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+  res.sendFile(join(PUBLIC_DIR, 'index.html'));
+});
+
+// -------------------------------------------------------------------
 // START SERVER
 // -------------------------------------------------------------------
 const PORT = process.env.PORT || 10000;
@@ -606,6 +624,8 @@ connectMongo()
   .then(() => {
     httpServer.listen(PORT, () => {
       log.info(`🚀 Reebow TECH Final Boss running on port ${PORT}`);
+      log.info(`📁 Serving static files from: ${PUBLIC_DIR}`);
+      log.info(`🌐 Public URL: ${process.env.APP_URL || 'http://localhost:' + PORT}`);
     });
   })
   .catch((err) => {
