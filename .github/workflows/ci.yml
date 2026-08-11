@@ -1,7 +1,7 @@
 # ════════════════════════════════════════════════════════════════════════
 # REEBOW TECH PLATFORM — GITHUB ACTIONS AUTOMATION (CI/CD)
 # Multi-stage checks: Code Check → Testing → Security → Build & Deploy
-# Version: 2.0.0
+# Version: 2.0.1
 # ════════════════════════════════════════════════════════════════════════
 
 name: Reebow Platform CI/CD
@@ -9,7 +9,6 @@ name: Reebow Platform CI/CD
 on:
   push:
     branches: [main, develop]
-    tags: ['v*']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -233,11 +232,6 @@ jobs:
             BUILD_DATE=${{ steps.meta.outputs.date }}
             VCS_REF=${{ github.sha }}
             VERSION=${{ steps.meta.outputs.version }}
-
-      - name: Sign Container Image with Cosign
-        if: env.COSIGN_PRIVATE_KEY != ''
-        run: |
-          echo "${{ secrets.COSIGN_PRIVATE_KEY }}" | cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${{ steps.meta.outputs.tags }}
 
   # ─────────────────────────────────────────────────────────────────────
   # STAGING DEPLOYMENT
