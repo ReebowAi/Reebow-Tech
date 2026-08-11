@@ -1234,5 +1234,21 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ────────────────────────────────────────────────────────────────────────
+   MOBILE & COMPONENT FIXES (PWA Banner Icon Sizing)
+   ──────────────────────────────────────────────────────────────────────── */
+.pwa-banner .pwa-icon {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  flex-shrink: 0;
+}
+
+svg.pwa-icon, 
+svg.logo-mark {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
    END OF MASTER STYLESHEET
    ──────────────────────────────────────────────────────────────────────── */
