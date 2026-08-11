@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: reebow-tech
+    env: node
+    plan: free
+    buildCommand: npm ci --production
+    startCommand: node server.js
+    healthCheckPath: /health
+    domains:
+      - reebow-tech.onrender.com
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: TRUST_PROXY
+        value: "true"

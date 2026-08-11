@@ -1,0 +1,13 @@
+# Apache configuration for SPA routing
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # If it's a file or directory, don't rewrite
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  
+  # All other requests to index.html
+  RewriteRule ^ index.html [QSA,L]
+</IfModule>
