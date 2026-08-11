@@ -122,6 +122,7 @@ input[type="radio"],
   min-height: 44px;
   min-width: 44px;
   touch-action: manipulation; /* Prevents double-tap zoom */
+  pointer-events: auto !important; /* Force interactive elements to receive clicks/taps */
 }
 
 /* Exception: compact inline elements */
@@ -150,9 +151,9 @@ html {
 }
 body {
   overscroll-behavior: none;
-  position: fixed;
+  position: relative;
   width: 100%;
-  overflow: hidden; /* Let inner containers scroll */
+  overflow-x: hidden; /* Prevent horizontal overflow shifts */
 }
 
 /* Allow scroll only where needed */
@@ -357,8 +358,53 @@ select {
 }
 
 /* ────────────────────────────────────────────────────────────────────────
-   10. LANDSCAPE ORIENTATION FIXES
+   10. LANDSCAPE & DESKTOP-ON-MOBILE VIEWPORT OVERRIDES
    ──────────────────────────────────────────────────────────────────────── */
+@media screen and (max-width: 1024px) {
+  body {
+    width: 100% !important;
+    overflow-x: hidden !important;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Correct overlapping navigation bars and ensure proper wrap */
+  header nav, .nav-container, .nav {
+    display: flex !important;
+    flex-wrap: wrap;
+    position: relative !important;
+    height: auto !important;
+    padding: 10px 15px;
+  }
+
+  /* Mobile menu drawer and link list fixes */
+  .nav-links, 
+  .mobile-menu-drawer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    background-color: var(--bg-primary, #06080e);
+    position: relative;
+    z-index: 100;
+    width: 100%;
+  }
+
+  /* Prevent hero elements from scattering */
+  .hero-section, .features-grid, .cta-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  /* Fix unclickable stacked buttons */
+  .button-group, .hero-buttons {
+    position: relative;
+    z-index: 999;
+    pointer-events: auto !important;
+  }
+}
+
 @media (orientation: landscape) and (max-height: 500px) {
   /* Compact everything in landscape */
   :root {
@@ -454,34 +500,49 @@ select {
 }
 
 /* ────────────────────────────────────────────────────────────────────────
-   12. DARK MODE MEDIA QUERY (Respect system preference)
+   12. DARK MODE MEDIA QUERY & UNIQUE NEURAL AMBIENT LIGHT LAYER
    ──────────────────────────────────────────────────────────────────────── */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg-primary: #f9fafb;
+    --bg-primary: #f8fafc;
     --bg-secondary: #ffffff;
-    --bg-tertiary: #f3f4f6;
-    --bg-hover: #e5e7eb;
-    --bg-active: #d1d5db;
+    --bg-tertiary: #f1f5f9;
+    --bg-hover: #e2e8f0;
+    --bg-active: #cbd5e1;
     --bg-input: #ffffff;
 
-    --text-primary: #111827;
-    --text-secondary: #374151;
-    --text-muted: #6b7280;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
     --text-inverse: #ffffff;
 
-    --border-primary: #e5e7eb;
-    --border-secondary: #d1d5db;
-    --border-focus: #3b82f6;
+    --border-primary: #e2e8f0;
+    --border-secondary: #cbd5e1;
+    --border-focus: #2563eb;
 
-    --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
-    --shadow-lg: 0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.05);
-    --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.05);
+    --shadow-inner: inset 0 2px 4px rgba(15, 23, 42, 0.04);
   }
+}
 
-  .mobile-fix.css { /* Ensure this file loads after style.css for overrides */ }
+/* Environment & Display: Advanced Asymmetric Neural Ambient Lighting */
+body::before {
+  content: "";
+  position: fixed;
+  top: -50vw;
+  left: -50vw;
+  width: 200vw;
+  height: 200vw;
+  pointer-events: none;
+  z-index: 99999;
+  background: radial-gradient(circle at 35% 25%, rgba(99, 102, 241, 0.035) 0%, transparent 45%),
+              radial-gradient(circle at 75% 65%, rgba(168, 85, 247, 0.025) 0%, transparent 50%),
+              radial-gradient(circle at 15% 85%, rgba(14, 165, 233, 0.03) 0%, transparent 40%);
+  mix-blend-mode: overlay;
+  opacity: 0.85;
 }
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -500,8 +561,10 @@ select {
   .orb,
   .pulse-dot,
   .typing-dots span,
-  .call-spinner {
+  .call-spinner,
+  body::before {
     animation: none !important;
+    opacity: 0.4 !important;
   }
 
   .typing-dots span {
