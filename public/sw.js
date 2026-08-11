@@ -1,16 +1,14 @@
-
-```javascript
 // ════════════════════════════════════════════════════════════════════════
 // REEBOW TECH — SERVICE WORKER
-// Version: 2.0.0 | Offline-First | Background Sync | Push Notifications
+// Version: 2.0.1 | Offline-First | Background Sync | Push Notifications
 // ════════════════════════════════════════════════════════════════════════
 
-/* global self, caches, clients, fetch, Registration, PushManager, Notification */
+/* global self, caches, clients, fetch, Registration, PushManager, Notification, indexedDB */
 
 // ────────────────────────────────────────────────────────────────────────
 // CONFIGURATION & VERSIONING
 // ────────────────────────────────────────────────────────────────────────
-const SW_VERSION = '2.0.0';
+const SW_VERSION = '2.0.1';
 const CACHE_PREFIX = 'reebow';
 const CACHE_NAME = `${CACHE_PREFIX}-v${SW_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime`;
@@ -78,7 +76,6 @@ const log = (level, message, data = {}) => {
   const entry = { timestamp: Date.now(), level, message, ...data };
   // Console for debugging
   console[level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'](prefix, message, data);
-  // Could send to analytics endpoint here
   return entry;
 };
 
@@ -127,8 +124,15 @@ const openQueueDB = () => {
   });
 };
 
-const queueRequest = async (request, body) => {
+const queueRequest = async (request) => {
   const db = await openQueueDB();
+  let bodyText = null;
+  try {
+    bodyText = await request.clone().text();
+  } catch (e) {
+    // Ignore if body cannot be read
+  }
+
   return new Promise((resolve, reject) => {
     const tx = db.transaction(QUEUE_STORE, 'readwrite');
     const store = tx.objectStore(QUEUE_STORE);
@@ -136,7 +140,7 @@ const queueRequest = async (request, body) => {
       url: request.url,
       method: request.method,
       headers: [...request.headers.entries()],
-      body: body ? await body.text() : null,
+      body: bodyText,
       timestamp: Date.now(),
       destination: request.destination,
     };
@@ -168,17 +172,6 @@ const deleteQueuedRequest = async (id) => {
   });
 };
 
-const clearQueue = async () => {
-  const db = await openQueueDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(QUEUE_STORE, 'readwrite');
-    const store = tx.objectStore(QUEUE_STORE);
-    const req = store.clear();
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-};
-
 // ────────────────────────────────────────────────────────────────────────
 // CACHE STRATEGIES IMPLEMENTATION
 // ────────────────────────────────────────────────────────────────────────
@@ -186,11 +179,6 @@ const cacheFirst = async (request, cacheName, options = {}) => {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
   if (cached) {
-    // Handle range requests for video
-    if (options.rangeRequests && request.headers.has('range')) {
-      // For simplicity, return full cached response
-      // Full range support requires more complex handling
-    }
     return cached;
   }
   try {
@@ -207,9 +195,9 @@ const cacheFirst = async (request, cacheName, options = {}) => {
 
 const networkFirst = async (request, cacheName, networkTimeoutSeconds = 5) => {
   const cache = await caches.open(cacheName);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), networkTimeoutSeconds * 1000);
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), networkTimeoutSeconds * 1000);
     const response = await fetch(request, { signal: controller.signal });
     clearTimeout(timeoutId);
     if (canCacheResponse(response)) {
@@ -233,7 +221,7 @@ const staleWhileRevalidate = async (request, cacheName) => {
       cache.put(request, response.clone());
     }
     return response;
-  }).catch(() => cached); // Fail silently, return cached if exists
+  }).catch(() => cached); 
   return cached || fetchPromise;
 };
 
@@ -301,7 +289,6 @@ const getOfflineFallback = async () => {
   const cache = await caches.open(CACHE_NAME);
   let fallback = await cache.match(OFFLINE_FALLBACK);
   if (!fallback) {
-    // Create minimal offline page
     fallback = new Response(
       `<!DOCTYPE html><html><head><title>Offline</title>
       <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -328,7 +315,6 @@ const flushOfflineQueue = async () => {
   for (const item of queued) {
     try {
       const headers = new Headers(item.headers);
-      // Remove headers that can't be set
       headers.delete('content-length');
       headers.delete('host');
       
@@ -376,7 +362,6 @@ const showNotification = async (data) => {
     timestamp: data.timestamp || Date.now(),
   };
   
-  // Add image if provided
   if (data.image) options.image = data.image;
   
   return self.registration.showNotification(data.title || 'Reebow TECH', options);
@@ -386,7 +371,6 @@ const showNotification = async (data) => {
 // SERVICE WORKER LIFECYCLE EVENTS
 // ────────────────────────────────────────────────────────────────────────
 
-// INSTALL
 self.addEventListener('install', (event) => {
   log('info', 'Service Worker installing', { version: SW_VERSION });
   event.waitUntil(
@@ -397,7 +381,6 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// ACTIVATE
 self.addEventListener('activate', (event) => {
   log('info', 'Service Worker activating', { version: SW_VERSION });
   event.waitUntil(
@@ -408,19 +391,15 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// FETCH
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   
-  // Skip non-GET requests (let them go to network)
   if (request.method !== 'GET') {
-    // Queue POST/PUT/DELETE when offline
     if (!navigator.onLine) {
       event.waitUntil(
         (async () => {
           try {
-            const body = request.body ? await request.clone().text() : null;
-            await queueRequest(request, { text: () => Promise.resolve(body) });
+            await queueRequest(request);
             log('info', 'Queued offline request', { method: request.method, url: request.url });
           } catch (error) {
             log('error', 'Failed to queue request', { error: error.message });
@@ -428,18 +407,14 @@ self.addEventListener('fetch', (event) => {
         })()
       );
     }
-    return; // Let browser handle non-GET
+    return;
   }
   
-  // Skip cross-origin
   if (!isSameOrigin(request)) return;
-  
-  // Skip WebSocket upgrades
   if (request.headers.get('upgrade')?.toLowerCase() === 'websocket') return;
   
   const route = matchRoute(request);
   
-  // Navigation requests - handle offline
   if (isNavigationRequest(request)) {
     event.respondWith(
       (async () => {
@@ -448,7 +423,6 @@ self.addEventListener('fetch', (event) => {
           if (routeMatch) {
             return await executeStrategy(request, routeMatch);
           }
-          // Default: network first for HTML
           return await networkFirst(request, RUNTIME_CACHE);
         } catch (error) {
           log('warn', 'Navigation fetch failed, showing offline page', { url: request.url });
@@ -459,7 +433,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Static assets & API - use route strategy
   if (route) {
     event.respondWith(
       (async () => {
@@ -467,12 +440,10 @@ self.addEventListener('fetch', (event) => {
           return await executeStrategy(request, route);
         } catch (error) {
           log('warn', 'Fetch strategy failed', { url: request.url, strategy: route.strategy, error: error.message });
-          // Try cache as last resort
           const cache = await caches.open(RUNTIME_CACHE);
           const cached = await cache.match(request);
           if (cached) return cached;
           
-          // For clips, return a placeholder
           if (request.destination === 'video') {
             return new Response('', { status: 503, statusText: 'Offline' });
           }
@@ -484,10 +455,8 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// MESSAGE - Communication from main thread
 self.addEventListener('message', (event) => {
   const { data } = event;
-  
   if (!data?.type) return;
   
   switch (data.type) {
@@ -504,7 +473,6 @@ self.addEventListener('message', (event) => {
       break;
       
     case 'CACHE_CLIPS':
-      // Pre-cache specific video clips
       if (data.clips?.length) {
         event.waitUntil(
           (async () => {
@@ -533,13 +501,11 @@ self.addEventListener('message', (event) => {
       break;
       
     case 'SUBSCRIBE_PUSH':
-      // Handled by main thread, but SW can confirm
       event.ports[0]?.postMessage({ success: true });
       break;
   }
 });
 
-// SYNC - Background sync event
 self.addEventListener('sync', (event) => {
   if (event.tag === 'reebow-sync-messages') {
     log('info', 'Background sync triggered');
@@ -547,10 +513,8 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// PUSH - Push notification received
 self.addEventListener('push', (event) => {
   if (!event.data) return;
-  
   try {
     const data = event.data.json();
     log('info', 'Push received', { tag: data.tag });
@@ -561,61 +525,46 @@ self.addEventListener('push', (event) => {
   }
 });
 
-// NOTIFICATIONCLICK - User clicked notification
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
   const { action, data } = event.notification;
-  
   if (action === 'dismiss') return;
-  
   const urlToOpen = data?.url || '/visitor.html';
   
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Try to focus existing window
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           return client.focus();
         }
       }
-      // Open new window
       return clients.openWindow(urlToOpen);
     })
   );
 });
 
-// NOTIFICATIONCLOSE - User dismissed notification
 self.addEventListener('notificationclose', (event) => {
-  const { tag } = event.notification;
-  log('info', 'Notification closed', { tag });
-  // Could send analytics here
+  log('info', 'Notification closed', { tag: event.notification.tag });
 });
 
-// PERIODIC SYNC (requires periodic-background-sync permission)
 self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'reebow-periodic-sync') {
     log('info', 'Periodic sync triggered');
     event.waitUntil(
       Promise.all([
         flushOfflineQueue(),
-        // Could add cache refresh for clips here
       ])
     );
   }
 });
 
-// ERROR HANDLING
 self.addEventListener('error', (event) => {
   log('error', 'Service Worker error', { message: event.message, filename: event.filename, lineno: event.lineno });
 });
 
 self.addEventListener('unhandledrejection', (event) => {
   log('error', 'Unhandled rejection', { reason: String(event.reason) });
-  event.preventDefault(); // Prevent console spam
+  event.preventDefault();
 });
 
 log('info', 'Service Worker loaded', { version: SW_VERSION, precacheCount: PRECACHE_MANIFEST.length });
-```
-
----
