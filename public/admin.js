@@ -66,6 +66,49 @@ const cacheElements = () => {
   els.clearChatBtn = document.getElementById('clearChatBtn');
   els.banVisitorBtn = document.getElementById('banVisitor');
   els.settingsBtn = document.getElementById('settingsBtn');
+
+  // Additional elements for UI tabs, realism engine, clip modals & video calls
+  els.rightPanel = document.getElementById('rightPanel');
+  els.panelTabs = document.querySelectorAll('.panel-tab');
+  els.panelPanes = document.querySelectorAll('.panel-pane');
+  els.visitorDetails = document.getElementById('visitorDetails');
+  els.copyVisitorIdBtn = document.getElementById('copyVisitorId');
+  els.clipsGrid = document.getElementById('clipsGrid');
+  els.injectClipBtn = document.getElementById('injectClipBtn');
+  els.clipModal = document.getElementById('clipModal');
+  els.clipPersona = document.getElementById('clipPersona');
+  els.clipSelect = document.getElementById('clipSelect');
+  els.clipLoop = document.getElementById('clipLoop');
+  els.confirmInjectClip = document.getElementById('confirmInjectClip');
+  els.settingsModal = document.getElementById('settingsModal');
+  els.saveSettingsBtn = document.getElementById('saveSettings');
+  els.connectionIndicator = document.getElementById('connectionIndicator');
+  els.typingIndicator = document.getElementById('typingIndicator');
+  
+  // Realism controls
+  els.filmGrainToggle = document.getElementById('filmGrainToggle');
+  els.softFocusToggle = document.getElementById('softFocusToggle');
+  els.warmthSlider = document.getElementById('warmthSlider');
+  els.warmthValue = document.getElementById('warmthValue');
+  els.contrastSlider = document.getElementById('contrastSlider');
+  els.contrastValue = document.getElementById('contrastValue');
+  els.saturationSlider = document.getElementById('saturationSlider');
+  els.saturationValue = document.getElementById('saturationValue');
+  els.brightnessSlider = document.getElementById('brightnessSlider');
+  els.brightnessValue = document.getElementById('brightnessValue');
+  els.applyRealismBtn = document.getElementById('applyRealism');
+
+  // Call Overlay controls
+  els.callOverlay = document.getElementById('callOverlay');
+  els.callOverlayTitle = document.getElementById('callOverlayTitle');
+  els.callStatus = document.getElementById('callStatus');
+  els.callAgentName = document.getElementById('callAgentName');
+  els.callVideo = document.getElementById('callVideo');
+  els.callMuteBtn = document.getElementById('callMute');
+  els.callHideSelfBtn = document.getElementById('callHideSelf');
+  els.endCallBtn = document.getElementById('endCall');
+  els.attachBtn = document.getElementById('attachBtn');
+  els.quickReplyBtn = document.getElementById('quickReplyBtn');
 };
 
 // -------------------------------------------------------------------
@@ -151,7 +194,7 @@ const handleLogin = async (e) => {
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Login';
+      submitBtn.textContent = 'Authenticate';
     }
   }
 };
@@ -182,21 +225,29 @@ const connectSocket = () => {
   state.socket.on('connect', () => {
     state.connected = true;
     console.log('[Admin] Socket connected');
-    // Join admin room for this tenant
+    if (els.connectionIndicator) {
+      els.connectionIndicator.className = 'connection-status connected';
+      const label = els.connectionIndicator.querySelector('.label');
+      if (label) label.textContent = 'Live Connected';
+    }
     state.socket.emit('admin-join', { tenantId: state.currentTenant });
     loadVisitors();
+    loadClipsManifest();
   });
 
   state.socket.on('disconnect', () => {
     state.connected = false;
+    if (els.connectionIndicator) {
+      els.connectionIndicator.className = 'connection-status disconnected';
+      const label = els.connectionIndicator.querySelector('.label');
+      if (label) label.textContent = 'Disconnected';
+    }
   });
 
   state.socket.on('incoming-message', (data) => {
-    // data = { email, message }
     if (data.email === state.currentVisitorEmail) {
       appendMessage(data.message);
     }
-    // Update visitor list preview if needed
     loadVisitors();
   });
 
@@ -214,12 +265,18 @@ const connectSocket = () => {
 
   state.socket.on('call-ended', () => {
     toast('Call ended');
-    state.activeCall = null;
+    closeCallOverlay();
+  });
+
+  state.socket.on('visitor-typing', (data) => {
+    if (data.email === state.currentVisitorEmail && els.typingIndicator) {
+      els.typingIndicator.hidden = !data.isTyping;
+    }
   });
 };
 
 // -------------------------------------------------------------------
-// VISITORS
+// VISITORS & INTELLIGENCE
 // -------------------------------------------------------------------
 const loadVisitors = async () => {
   try {
@@ -238,7 +295,6 @@ const updateVisitorsList = (visitors) => {
   visitors.forEach(v => state.visitors.set(v.email, v));
 
   if (els.visitorCount) els.visitorCount.textContent = visitors.length;
-
   if (!els.visitorList) return;
 
   const searchTerm = (els.visitorSearch?.value || '').toLowerCase();
@@ -265,17 +321,21 @@ const updateVisitorsList = (visitors) => {
     `;
   }).join('');
 
-  // Bind clicks
   document.querySelectorAll('.visitor-item').forEach(el => {
     el.onclick = () => selectVisitor(el.dataset.email);
   });
+
+  // If current visitor metadata updated, refresh panel
+  if (state.currentVisitorEmail && state.visitors.has(state.currentVisitorEmail)) {
+    state.currentVisitor = state.visitors.get(state.currentVisitorEmail);
+    updateVisitorDetailsPane();
+  }
 };
 
 const selectVisitor = async (email) => {
   state.currentVisitorEmail = email;
   state.currentVisitor = state.visitors.get(email);
 
-  // Highlight
   document.querySelectorAll('.visitor-item').forEach(el => {
     el.classList.toggle('active', el.dataset.email === email);
   });
@@ -289,8 +349,29 @@ const selectVisitor = async (email) => {
     els.chatVisitorMeta.textContent = `${v?.city || ''} ${v?.country || ''}`.trim() || 'Unknown location';
   }
 
-  // Render messages
+  if (els.chatOnlineIndicator) {
+    els.chatOnlineIndicator.className = `visitor-avatar-sm ${state.currentVisitor?.isOnline ? 'online' : ''}`;
+  }
+
   renderMessages(state.currentVisitor?.messages || []);
+  updateVisitorDetailsPane();
+
+  if (els.copyVisitorIdBtn) els.copyVisitorIdBtn.disabled = false;
+  if (els.banVisitorBtn) els.banVisitorBtn.disabled = false;
+};
+
+const updateVisitorDetailsPane = () => {
+  if (!els.visitorDetails || !state.currentVisitor) return;
+  const v = state.currentVisitor;
+  els.visitorDetails.innerHTML = `
+    <div class="detail-group"><strong>Email:</strong> ${v.email}</div>
+    <div class="detail-group"><strong>Location:</strong> ${v.city || 'Unknown'}, ${v.country || 'Unknown'}</div>
+    <div class="detail-group"><strong>IP Address:</strong> ${v.ip || '127.0.0.1'}</div>
+    <div class="detail-group"><strong>ISP / Org:</strong> ${v.isp || 'Direct Network'}</div>
+    <div class="detail-group"><strong>Device / OS:</strong> ${v.userAgent || 'Standard Browser'}</div>
+    <div class="detail-group"><strong>Proxy / VPN:</strong> <span class="${v.isProxy ? 'text-danger' : 'text-success'}">${v.isProxy ? 'Detected (Proxy/VPN)' : 'Clean'}</span></div>
+    <div class="detail-group"><strong>Session Started:</strong> ${new Date(v.connectedAt || Date.now()).toLocaleString()}</div>
+  `;
 };
 
 // -------------------------------------------------------------------
@@ -332,6 +413,7 @@ const sendMessage = async () => {
   if (!content || !state.currentVisitorEmail) return;
 
   els.messageInput.value = '';
+  els.messageInput.style.height = 'auto';
 
   try {
     const res = await fetch('/api/admin/message', {
@@ -356,7 +438,127 @@ const sendMessage = async () => {
 };
 
 // -------------------------------------------------------------------
-// ACTIONS
+// CLIPS VAULT & MANIFEST
+// -------------------------------------------------------------------
+const loadClipsManifest = async () => {
+  try {
+    const res = await fetch('/clips/manifest.json');
+    if (res.ok) {
+      state.clipsManifest = await res.json();
+      renderClipsVault();
+      populateClipModalSelects();
+    }
+  } catch (e) {
+    console.warn('Could not load clips manifest', e);
+  }
+};
+
+const renderClipsVault = () => {
+  if (!els.clipsGrid) return;
+  let html = '';
+  Object.keys(state.clipsManifest).forEach(persona => {
+    const clips = state.clipsManifest[persona] || [];
+    clips.forEach(clip => {
+      html += `
+        <div class="clip-card" data-persona="${persona}" data-clip="${clip.file}">
+          <div class="clip-thumb">
+            <video src="/clips/${persona}/${clip.file}" muted preload="metadata"></video>
+            <span class="clip-badge">${persona}</span>
+          </div>
+          <div class="clip-title">${clip.title || clip.file}</div>
+        </div>
+      `;
+    });
+  });
+  els.clipsGrid.innerHTML = html || '<p class="text-muted">No clips found in manifest.</p>';
+
+  // Click to inject instantly
+  els.clipsGrid.querySelectorAll('.clip-card').forEach(card => {
+    card.onclick = () => {
+      const persona = card.dataset.persona;
+      const file = card.dataset.clip;
+      injectClip(persona, file, false);
+    };
+  });
+};
+
+const populateClipModalSelects = () => {
+  if (!els.clipPersona || !els.clipSelect) return;
+  const personas = Object.keys(state.clipsManifest);
+  if (!personas.length) return;
+
+  els.clipPersona.innerHTML = personas.map(p => `<option value="${p}">${p.toUpperCase()}</option>`).join('');
+  updateClipSelectOptions(personas[0]);
+
+  els.clipPersona.onchange = (e) => updateClipSelectOptions(e.target.value);
+};
+
+const updateClipSelectOptions = (persona) => {
+  if (!els.clipSelect) return;
+  const clips = state.clipsManifest[persona] || [];
+  els.clipSelect.innerHTML = clips.map(c => `<option value="${c.file}">${c.title || c.file}</option>`).join('');
+};
+
+const injectClip = async (persona, file, loop) => {
+  if (!state.currentVisitorEmail) return toast('Select a visitor first');
+  try {
+    const res = await fetch('/api/admin/inject-clip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        email: state.currentVisitorEmail,
+        persona,
+        clip: file,
+        loop: !!loop,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast(`Injected clip: ${file}`, 'success');
+      if (els.clipModal) els.clipModal.classList.remove('active');
+    } else {
+      toast(data.error || 'Failed to inject clip', 'error');
+    }
+  } catch (e) {
+    toast('Error injecting clip', 'error');
+  }
+};
+
+// -------------------------------------------------------------------
+// REALISM ENGINE
+// -------------------------------------------------------------------
+const applyRealismSettings = async () => {
+  if (!state.currentVisitorEmail) return toast('Select a visitor first');
+  const settings = {
+    filmGrain: els.filmGrainToggle?.checked ?? true,
+    softFocus: els.softFocusToggle?.checked ?? false,
+    warmth: els.warmthSlider?.value || 100,
+    contrast: els.contrastSlider?.value || 100,
+    saturation: els.saturationSlider?.value || 100,
+    brightness: els.brightnessSlider?.value || 100,
+  };
+
+  try {
+    const res = await fetch('/api/admin/realism', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email: state.currentVisitorEmail, ...settings }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast('Realism settings applied', 'success');
+    } else {
+      toast('Failed to apply realism', 'error');
+    }
+  } catch (e) {
+    toast('Error applying realism', 'error');
+  }
+};
+
+// -------------------------------------------------------------------
+// ACTIONS & CALLS
 // -------------------------------------------------------------------
 const banVisitor = async () => {
   if (!state.currentVisitorEmail) return;
@@ -426,6 +628,7 @@ const initiateCall = async () => {
     if (data.success) {
       toast('Call initiated', 'success');
       state.activeCall = data;
+      openCallOverlay('Annie', 'Ringing visitor...');
     } else {
       toast(data.error || 'Failed to start call', 'error');
     }
@@ -434,13 +637,27 @@ const initiateCall = async () => {
   }
 };
 
+const openCallOverlay = (agentName, statusText) => {
+  if (!els.callOverlay) return;
+  if (els.callAgentName) els.callAgentName.textContent = agentName;
+  if (els.callStatus) els.callStatus.textContent = statusText;
+  els.callOverlay.classList.add('active');
+};
+
+const closeCallOverlay = () => {
+  if (!els.callOverlay) return;
+  els.callOverlay.classList.remove('active');
+  if (els.callVideo) els.callVideo.srcObject = null;
+  state.activeCall = null;
+};
+
 // -------------------------------------------------------------------
-// INIT
+// INIT & EVENT BINDINGS
 // -------------------------------------------------------------------
 const initApp = () => {
   cacheElements();
 
-  // Bind events
+  // Send message bindings
   if (els.sendBtn) els.sendBtn.onclick = sendMessage;
   if (els.messageInput) {
     els.messageInput.addEventListener('keydown', (e) => {
@@ -449,18 +666,98 @@ const initApp = () => {
         sendMessage();
       }
     });
+    els.messageInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+      
+      // Emit typing indicator to socket if available
+      if (state.socket && state.currentVisitorEmail) {
+        state.socket.emit('admin-typing', { email: state.currentVisitorEmail, isTyping: true });
+        clearTimeout(window.typingTimer);
+        window.typingTimer = setTimeout(() => {
+          state.socket.emit('admin-typing', { email: state.currentVisitorEmail, isTyping: false });
+        }, 1500);
+      }
+    });
   }
+
+  // Action buttons
   if (els.callBtn) els.callBtn.onclick = initiateCall;
   if (els.clearChatBtn) els.clearChatBtn.onclick = clearConversation;
   if (els.banVisitorBtn) els.banVisitorBtn.onclick = banVisitor;
+  
   if (els.visitorSearch) {
     els.visitorSearch.addEventListener('input', () => {
       updateVisitorsList([...state.visitors.values()]);
     });
   }
 
+  // Right Panel Tabs switching
+  if (els.panelTabs) {
+    els.panelTabs.forEach(tab => {
+      tab.onclick = () => {
+        els.panelTabs.forEach(t => t.classList.remove('active'));
+        els.panelPanes.forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        const target = document.getElementById(`pane-${tab.dataset.tab}`);
+        if (target) target.classList.add('active');
+      };
+    });
+  }
+
+  // Copy Visitor ID
+  if (els.copyVisitorIdBtn) {
+    els.copyVisitorIdBtn.onclick = () => {
+      if (state.currentVisitorEmail) {
+        navigator.clipboard.writeText(state.currentVisitorEmail);
+        toast('Visitor ID copied to clipboard', 'success');
+      }
+    };
+  }
+
+  // Realism Sliders live update values
+  const bindSlider = (slider, valEl) => {
+    if (slider && valEl) {
+      slider.oninput = () => valEl.textContent = slider.value;
+    }
+  };
+  bindSlider(els.warmthSlider, els.warmthValue);
+  bindSlider(els.contrastSlider, els.contrastValue);
+  bindSlider(els.saturationSlider, els.saturationValue);
+  bindSlider(els.brightnessSlider, els.brightnessValue);
+
+  if (els.applyRealismBtn) els.applyRealismBtn.onclick = applyRealismSettings;
+
+  // Modals handling (Clip modal & Settings modal)
+  if (els.injectClipBtn && els.clipModal) {
+    els.injectClipBtn.onclick = () => els.clipModal.classList.add('active');
+  }
+  if (els.settingsBtn && els.settingsModal) {
+    els.settingsBtn.onclick = () => els.settingsModal.classList.add('active');
+  }
+  document.querySelectorAll('.modal-close').forEach(btn => {
+    btn.onclick = () => {
+      btn.closest('.modal')?.classList.remove('active');
+    };
+  });
+
+  if (els.confirmInjectClip) {
+    els.confirmInjectClip.onclick = () => {
+      const persona = els.clipPersona?.value;
+      const file = els.clipSelect?.value;
+      const loop = els.clipLoop?.checked;
+      if (persona && file) {
+        injectClip(persona, file, loop);
+      }
+    };
+  }
+
+  // Call overlay buttons
+  if (els.endCallBtn) els.endCallBtn.onclick = closeCallOverlay;
+
   connectSocket();
   loadVisitors();
+  loadClipsManifest();
 };
 
 // -------------------------------------------------------------------
